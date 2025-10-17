@@ -7,6 +7,8 @@ const { verifyPassword } = require('./lib/auth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const SESSION_SECRET = process.env.SESSION_SECRET || 'tahprod-secret-key-2025';
+const SESSION_MAX_AGE = parseInt(process.env.SESSION_MAX_AGE || '604800000', 10);
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -19,11 +21,11 @@ app.use(session({
         db: 'sessions.db',
         dir: path.join(__dirname, 'data')
     }),
-    secret: 'tahprod-secret-key-2025',
+    secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
-        maxAge: 7 * 24 * 60 * 60 * 1000
+        maxAge: SESSION_MAX_AGE
     }
 }));
 
