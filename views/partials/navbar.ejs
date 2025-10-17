@@ -2,7 +2,11 @@
     <div class="nav-container">
         <div class="nav-brand">TAH PROD</div>
         <div class="nav-links">
-            <a href="/login" class="nav-link">Login</a>
+            <% if (user) { %>
+                <a href="/logout" class="nav-link">Disconnect</a>
+            <% } else { %>
+                <a href="/login" class="nav-link">Login</a>
+            <% } %>
         </div>
     </div>
 </nav>

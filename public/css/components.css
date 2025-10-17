@@ -115,3 +115,15 @@
     background-color: #ffffff;
     color: #000000;
 }
+
+/* Error Message */
+.error-message {
+    padding: 1rem;
+    margin-bottom: 2rem;
+    border: 1px solid #ff0000;
+    background-color: #000000;
+    color: #ff0000;
+    text-align: center;
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+}
