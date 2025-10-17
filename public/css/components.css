@@ -1,0 +1,117 @@
+/* Navbar */
+.navbar {
+    background-color: #000000;
+    border-bottom: 1px solid #ffffff;
+    padding: 1.5rem 0;
+}
+
+.nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-brand {
+    font-size: 1.2rem;
+    font-weight: bold;
+    letter-spacing: 0.1em;
+}
+
+.nav-links {
+    display: flex;
+    gap: 2rem;
+}
+
+.nav-link {
+    color: #ffffff;
+    text-decoration: none;
+    padding: 0.5rem 1rem;
+    border: 1px solid #ffffff;
+    transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+    background-color: #ffffff;
+    color: #000000;
+}
+
+/* Footer */
+.footer {
+    background-color: #000000;
+    border-top: 1px solid #ffffff;
+    padding: 2rem 0;
+}
+
+.footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+    text-align: center;
+}
+
+.footer-content p {
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+}
+
+/* Form */
+.form-container {
+    max-width: 500px;
+    width: 100%;
+    padding: 3rem;
+    border: 1px solid #ffffff;
+}
+
+.form-title {
+    font-size: 2rem;
+    font-weight: normal;
+    letter-spacing: 0.05em;
+    margin-bottom: 3rem;
+    text-align: center;
+}
+
+.form-group {
+    margin-bottom: 2rem;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #000000;
+    color: #ffffff;
+    border: 1px solid #ffffff;
+    font-family: Monaco, 'Courier New', monospace;
+    font-size: 1rem;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #ffffff;
+}
+
+.btn {
+    padding: 0.75rem 2rem;
+    background-color: #000000;
+    color: #ffffff;
+    border: 1px solid #ffffff;
+    font-family: Monaco, 'Courier New', monospace;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+.btn:hover {
+    background-color: #ffffff;
+    color: #000000;
+}
