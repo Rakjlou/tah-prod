@@ -2,7 +2,7 @@ const express = require('express');
 const session = require('express-session');
 const SQLiteStore = require('connect-sqlite3')(session);
 const path = require('path');
-const { getUserByUsername } = require('./lib/db');
+const { getUserByUsername, getAllConfig, setConfig } = require('./lib/db');
 const { verifyPassword } = require('./lib/auth');
 const { ROLES, hasRole } = require('./lib/roles');
 
@@ -101,7 +101,7 @@ app.get('/logout', (req, res) => {
     });
 });
 
-app.get('/admin', (req, res) => {
+app.get('/admin', async (req, res) => {
     if (!req.session.user) {
         return res.redirect('/login');
     }
@@ -110,7 +110,36 @@ app.get('/admin', (req, res) => {
         return res.status(403).send('Access denied');
     }
 
-    res.send('<h1>Admin Panel</h1><p>Welcome to the admin panel!</p><a href="/">Back to home</a>');
+    try {
+        const config = await getAllConfig();
+        res.render('admin', { config });
+    } catch (error) {
+        console.error('Error loading admin panel:', error);
+        res.render('admin', { error: 'Failed to load configuration', config: {} });
+    }
+});
+
+app.post('/admin', async (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+
+    if (!hasRole(req.session.user.role, ROLES.ADMIN)) {
+        return res.status(403).send('Access denied');
+    }
+
+    try {
+        for (const [key, value] of Object.entries(req.body)) {
+            await setConfig(key, value);
+        }
+
+        const config = await getAllConfig();
+        res.render('admin', { success: 'Configuration saved successfully', config });
+    } catch (error) {
+        console.error('Error saving configuration:', error);
+        const config = await getAllConfig();
+        res.render('admin', { error: 'Failed to save configuration', config });
+    }
 });
 
 app.listen(PORT, () => {
