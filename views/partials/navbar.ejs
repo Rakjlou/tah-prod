@@ -3,6 +3,9 @@
         <div class="nav-brand">TAH PROD</div>
         <div class="nav-links">
             <% if (user) { %>
+                <% if (hasRole(ROLES.ADMIN)) { %>
+                    <a href="/admin" class="nav-link">Admin</a>
+                <% } %>
                 <a href="/logout" class="nav-link">Disconnect</a>
             <% } else { %>
                 <a href="/login" class="nav-link">Login</a>

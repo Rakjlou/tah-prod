@@ -4,6 +4,7 @@ const SQLiteStore = require('connect-sqlite3')(session);
 const path = require('path');
 const { getUserByUsername } = require('./lib/db');
 const { verifyPassword } = require('./lib/auth');
+const { ROLES, hasRole } = require('./lib/roles');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -31,6 +32,10 @@ app.use(session({
 
 app.use((req, res, next) => {
     res.locals.user = req.session.user || null;
+    res.locals.ROLES = ROLES;
+    res.locals.hasRole = (role) => {
+        return req.session.user ? hasRole(req.session.user.role, role) : false;
+    };
     next();
 });
 
@@ -94,6 +99,18 @@ app.get('/logout', (req, res) => {
         }
         res.redirect('/');
     });
+});
+
+app.get('/admin', (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+
+    if (!hasRole(req.session.user.role, ROLES.ADMIN)) {
+        return res.status(403).send('Access denied');
+    }
+
+    res.send('<h1>Admin Panel</h1><p>Welcome to the admin panel!</p><a href="/">Back to home</a>');
 });
 
 app.listen(PORT, () => {

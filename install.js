@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { initializeDatabase, createUser } = require('./lib/db');
 const { hashPassword } = require('./lib/auth');
+const { ROLES } = require('./lib/roles');
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -90,7 +91,7 @@ async function install() {
         const hashedPassword = await hashPassword(password);
 
         console.log('Creating admin user...');
-        await createUser(username.trim(), hashedPassword, 1);
+        await createUser(username.trim(), hashedPassword, ROLES.ADMIN);
 
         console.log('');
         console.log('='.repeat(50));
