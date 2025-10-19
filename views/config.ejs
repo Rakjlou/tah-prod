@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <%- include('partials/head', { title: 'Configuration - Tah Prod' }) %>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <main class="main-content">
+        <div class="form-container">
+            <h1 class="form-title">Configuration</h1>
+            <%- include('partials/messages') %>
+
+            <form action="/config" method="POST">
+                <h2 class="section-title">Google OAuth Configuration</h2>
+                <div class="form-group">
+                    <label for="google_client_id" class="form-label">Google Client ID</label>
+                    <input type="text" id="google_client_id" name="google_client_id" class="form-input" value="<%= typeof config !== 'undefined' && config.google_client_id ? config.google_client_id : '' %>" placeholder="Your Google OAuth Client ID">
+                </div>
+                <div class="form-group">
+                    <label for="google_client_secret" class="form-label">Google Client Secret</label>
+                    <input type="password" id="google_client_secret" name="google_client_secret" class="form-input" value="<%= typeof config !== 'undefined' && config.google_client_secret ? config.google_client_secret : '' %>" placeholder="Your Google OAuth Client Secret">
+                </div>
+                <div class="form-group">
+                    <label for="google_redirect_uri" class="form-label">Google Redirect URI</label>
+                    <input type="text" id="google_redirect_uri" name="google_redirect_uri" class="form-input" value="<%= typeof config !== 'undefined' && config.google_redirect_uri ? config.google_redirect_uri : '' %>" placeholder="http://localhost:3000/auth/google/callback">
+                </div>
+                <div class="form-group">
+                    <label for="google_drive_folder_id" class="form-label">Google Drive Folder ID (Optional)</label>
+                    <input type="text" id="google_drive_folder_id" name="google_drive_folder_id" class="form-input" value="<%= typeof config !== 'undefined' && config.google_drive_folder_id ? config.google_drive_folder_id : '' %>" placeholder="Folder ID from Google Drive URL">
+                </div>
+                <button type="submit" class="btn">Save Configuration</button>
+            </form>
+        </div>
+    </main>
+
+    <%- include('partials/footer') %>
+</body>
+</html>

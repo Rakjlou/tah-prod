@@ -2,11 +2,12 @@ const express = require('express');
 const session = require('express-session');
 const SQLiteStore = require('connect-sqlite3')(session);
 const path = require('path');
-const { getUserByUsername, getAllConfig, setConfig, getAllBands, createBand } = require('./lib/db');
+const { getUserByUsername, getAllConfig, getAllBands, createBand } = require('./lib/db');
 const { verifyPassword } = require('./lib/auth');
 const { ROLES, hasRole } = require('./lib/roles');
 const { createBandSpreadsheet } = require('./lib/google-sheets');
-const { getAuthUrl, getTokensFromCode, getAuthenticatedClient } = require('./lib/google-oauth');
+const { getOAuthClient, getAuthUrl, getTokensFromCode, getAuthenticatedClient } = require('./lib/google-oauth');
+const configService = require('./lib/config-service');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -32,13 +33,22 @@ app.use(session({
     }
 }));
 
-app.use((req, res, next) => {
+app.use(async (req, res, next) => {
     res.locals.user = req.session.user || null;
     res.locals.isGoogleAuthenticated = !!(req.session.googleTokens);
     res.locals.ROLES = ROLES;
     res.locals.hasRole = (role) => {
         return req.session.user ? hasRole(req.session.user.role, role) : false;
     };
+
+    // Check if Google is configured
+    try {
+        const googleAuth = await configService.getGoogleOAuth();
+        res.locals.googleConfigured = !!googleAuth;
+    } catch (error) {
+        res.locals.googleConfigured = false;
+    }
+
     next();
 });
 
@@ -122,38 +132,45 @@ app.get('/logout', (req, res) => {
     });
 });
 
-app.get('/admin', requireAdmin, async (req, res) => {
+app.get('/config', requireAdmin, async (req, res) => {
     try {
         const config = await getAllConfig();
-        res.render('admin', { config });
+        res.render('config', { config });
     } catch (error) {
-        console.error('Error loading admin panel:', error);
-        res.render('admin', { error: 'Failed to load configuration', config: {} });
+        console.error('Error loading config panel:', error);
+        res.render('config', { error: 'Failed to load configuration', config: {} });
     }
 });
 
-app.post('/admin', requireAdmin, async (req, res) => {
+app.post('/config', requireAdmin, async (req, res) => {
     try {
         for (const [key, value] of Object.entries(req.body)) {
-            await setConfig(key, value);
+            await configService.set(key, value);
         }
 
         const config = await getAllConfig();
-        res.render('admin', { success: 'Configuration saved successfully', config });
+        res.render('config', { success: 'Configuration saved successfully', config });
     } catch (error) {
         console.error('Error saving configuration:', error);
         const config = await getAllConfig();
-        res.render('admin', { error: 'Failed to save configuration', config });
+        res.render('config', { error: 'Failed to save configuration', config });
     }
 });
 
-app.get('/auth/google', requireAdmin, (req, res) => {
+app.get('/auth/google', requireAdmin, async (req, res) => {
     try {
-        const authUrl = getAuthUrl();
+        const googleAuth = await configService.getGoogleOAuth();
+
+        if (!googleAuth) {
+            return res.redirect('/bands?error=' + encodeURIComponent('Google OAuth not configured. Please configure it in Config section first.'));
+        }
+
+        const oauthClient = getOAuthClient(googleAuth);
+        const authUrl = getAuthUrl(oauthClient);
         res.redirect(authUrl);
     } catch (error) {
         console.error('Error generating auth URL:', error);
-        res.redirect('/admin/bands?error=' + encodeURIComponent('Failed to initiate Google authentication'));
+        res.redirect('/bands?error=' + encodeURIComponent('Failed to initiate Google authentication'));
     }
 });
 
@@ -161,38 +178,45 @@ app.get('/auth/google/callback', requireAdmin, async (req, res) => {
     const { code, error } = req.query;
 
     if (error) {
-        return res.redirect('/admin/bands?error=' + encodeURIComponent('Google authentication cancelled'));
+        return res.redirect('/bands?error=' + encodeURIComponent('Google authentication cancelled'));
     }
 
     if (!code) {
-        return res.redirect('/admin/bands?error=' + encodeURIComponent('No authorization code received'));
+        return res.redirect('/bands?error=' + encodeURIComponent('No authorization code received'));
     }
 
     try {
-        const tokens = await getTokensFromCode(code);
+        const googleAuth = await configService.getGoogleOAuth();
+
+        if (!googleAuth) {
+            return res.redirect('/bands?error=' + encodeURIComponent('Google OAuth not configured'));
+        }
+
+        const oauthClient = getOAuthClient(googleAuth);
+        const tokens = await getTokensFromCode(code, oauthClient);
         req.session.googleTokens = tokens;
-        res.redirect('/admin/bands?success=' + encodeURIComponent('Google authentication successful'));
+        res.redirect('/bands?success=' + encodeURIComponent('Google authentication successful'));
     } catch (error) {
         console.error('OAuth callback error:', error);
-        res.redirect('/admin/bands?error=' + encodeURIComponent('Authentication failed: ' + error.message));
+        res.redirect('/bands?error=' + encodeURIComponent('Authentication failed: ' + error.message));
     }
 });
 
-app.get('/admin/bands', requireAdmin, async (req, res) => {
+app.get('/bands', requireAdmin, async (req, res) => {
     try {
         const bands = await getAllBands();
-        res.render('admin-bands', { bands });
+        res.render('bands', { bands });
     } catch (error) {
         console.error('Error loading bands:', error);
-        res.render('admin-bands', { error: 'Failed to load bands', bands: [] });
+        res.render('bands', { error: 'Failed to load bands', bands: [] });
     }
 });
 
-app.post('/admin/bands', requireAdmin, async (req, res) => {
+app.post('/bands', requireAdmin, async (req, res) => {
     // Check if Google authenticated
     if (!req.session.googleTokens) {
         const bands = await getAllBands();
-        return res.render('admin-bands', {
+        return res.render('bands', {
             error: 'Please authenticate with Google first',
             bands
         });
@@ -203,20 +227,30 @@ app.post('/admin/bands', requireAdmin, async (req, res) => {
 
         if (!name || !email) {
             const bands = await getAllBands();
-            return res.render('admin-bands', { error: 'Name and email are required', bands });
+            return res.render('bands', { error: 'Name and email are required', bands });
         }
 
-        const oauthClient = getAuthenticatedClient(req.session.googleTokens);
-        const { spreadsheetId } = await createBandSpreadsheet(oauthClient, name, email);
+        const googleAuth = await configService.getGoogleOAuth();
+
+        if (!googleAuth) {
+            const bands = await getAllBands();
+            return res.render('bands', { error: 'Google OAuth not configured', bands });
+        }
+
+        const oauthClient = getOAuthClient(googleAuth);
+        const authenticatedClient = getAuthenticatedClient(req.session.googleTokens, oauthClient);
+        const folderId = await configService.getGoogleDriveFolderId();
+
+        const { spreadsheetId } = await createBandSpreadsheet(authenticatedClient, name, email, folderId);
 
         await createBand(name, email, spreadsheetId);
 
         const bands = await getAllBands();
-        res.render('admin-bands', { success: `Band "${name}" created successfully!`, bands });
+        res.render('bands', { success: `Band "${name}" created successfully!`, bands });
     } catch (error) {
         console.error('Error creating band:', error);
         const bands = await getAllBands();
-        res.render('admin-bands', { error: 'Failed to create band: ' + error.message, bands });
+        res.render('bands', { error: 'Failed to create band: ' + error.message, bands });
     }
 });
 

@@ -4,7 +4,8 @@
         <div class="nav-links">
             <% if (user) { %>
                 <% if (hasRole(ROLES.ADMIN)) { %>
-                    <a href="/admin" class="nav-link">Admin</a>
+                    <a href="/bands" class="nav-link">Bands</a>
+                    <a href="/config" class="nav-link">Config</a>
                 <% } %>
                 <a href="/logout" class="nav-link">Disconnect</a>
             <% } else { %>

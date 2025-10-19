@@ -1,17 +1,23 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <%- include('partials/head', { title: 'Manage Bands - Tah Prod' }) %>
+    <%- include('partials/head', { title: 'Bands - Tah Prod' }) %>
 </head>
 <body>
     <%- include('partials/navbar') %>
 
     <main class="main-content">
         <div class="form-container" style="max-width: 900px;">
-            <h1 class="form-title">Manage Bands</h1>
+            <h1 class="form-title">Bands</h1>
             <%- include('partials/messages') %>
 
-            <% if (!isGoogleAuthenticated) { %>
+            <% if (!googleConfigured) { %>
+                <div class="info-box">
+                    <p>
+                        Google integration not configured yet. Please configure it in the <a href="/config" style="color: #ffffff; text-decoration: underline;">Config section</a> first.
+                    </p>
+                </div>
+            <% } else if (!isGoogleAuthenticated) { %>
                 <div class="info-box">
                     <p>
                         To create band spreadsheets, you need to authenticate with Google first.
@@ -22,8 +28,8 @@
                 </div>
             <% } %>
 
-            <% if (isGoogleAuthenticated) { %>
-            <form action="/admin/bands" method="POST" style="margin-bottom: 3rem;">
+            <% if (googleConfigured && isGoogleAuthenticated) { %>
+            <form action="/bands" method="POST" style="margin-bottom: 3rem;">
                 <h2 class="section-title">Add New Band</h2>
                 <div class="form-group">
                     <label for="name" class="form-label">Band Name</label>
