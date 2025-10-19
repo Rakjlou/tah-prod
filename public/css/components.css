@@ -1,7 +1,7 @@
 /* Navbar */
 .navbar {
-    background-color: #000000;
-    border-bottom: 1px solid #ffffff;
+    background-color: var(--color-bg);
+    border-bottom: var(--border-standard);
     padding: 1.5rem 0;
 }
 
@@ -17,7 +17,7 @@
 .nav-brand {
     font-size: 1.2rem;
     font-weight: bold;
-    letter-spacing: 0.1em;
+    letter-spacing: var(--spacing-letter-wide);
 }
 
 .nav-links {
@@ -26,22 +26,22 @@
 }
 
 .nav-link {
-    color: #ffffff;
+    color: var(--color-fg);
     text-decoration: none;
     padding: 0.5rem 1rem;
-    border: 1px solid #ffffff;
+    border: var(--border-standard);
     transition: all 0.2s ease;
 }
 
 .nav-link:hover {
-    background-color: #ffffff;
-    color: #000000;
+    background-color: var(--color-fg);
+    color: var(--color-bg);
 }
 
 /* Footer */
 .footer {
-    background-color: #000000;
-    border-top: 1px solid #ffffff;
+    background-color: var(--color-bg);
+    border-top: var(--border-standard);
     padding: 2rem 0;
 }
 
@@ -54,7 +54,7 @@
 
 .footer-content p {
     font-size: 0.9rem;
-    letter-spacing: 0.05em;
+    letter-spacing: var(--spacing-letter);
 }
 
 /* Form */
@@ -62,13 +62,13 @@
     max-width: 500px;
     width: 100%;
     padding: 3rem;
-    border: 1px solid #ffffff;
+    border: var(--border-standard);
 }
 
 .form-title {
     font-size: 2rem;
     font-weight: normal;
-    letter-spacing: 0.05em;
+    letter-spacing: var(--spacing-letter);
     margin-bottom: 3rem;
     text-align: center;
 }
@@ -81,30 +81,30 @@
     display: block;
     margin-bottom: 0.5rem;
     font-size: 0.9rem;
-    letter-spacing: 0.05em;
+    letter-spacing: var(--spacing-letter);
 }
 
 .form-input {
     width: 100%;
     padding: 0.75rem;
-    background-color: #000000;
-    color: #ffffff;
-    border: 1px solid #ffffff;
-    font-family: Monaco, 'Courier New', monospace;
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    border: var(--border-standard);
+    font-family: var(--font-mono);
     font-size: 1rem;
 }
 
 .form-input:focus {
     outline: none;
-    border-color: #ffffff;
+    border-color: var(--color-fg);
 }
 
 .btn {
     padding: 0.75rem 2rem;
-    background-color: #000000;
-    color: #ffffff;
-    border: 1px solid #ffffff;
-    font-family: Monaco, 'Courier New', monospace;
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    border: var(--border-standard);
+    font-family: var(--font-mono);
     font-size: 1rem;
     cursor: pointer;
     transition: all 0.2s ease;
@@ -112,18 +112,85 @@
 }
 
 .btn:hover {
-    background-color: #ffffff;
-    color: #000000;
+    background-color: var(--color-fg);
+    color: var(--color-bg);
 }
 
-/* Error Message */
+/* Messages */
 .error-message {
     padding: 1rem;
     margin-bottom: 2rem;
-    border: 1px solid #ff0000;
-    background-color: #000000;
-    color: #ff0000;
+    border: 1px solid var(--color-error);
+    background-color: var(--color-bg);
+    color: var(--color-error);
     text-align: center;
     font-size: 0.9rem;
-    letter-spacing: 0.05em;
+    letter-spacing: var(--spacing-letter);
+}
+
+.success-message {
+    padding: 1rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--color-success);
+    background-color: var(--color-bg);
+    color: var(--color-success);
+    text-align: center;
+    font-size: 0.9rem;
+    letter-spacing: var(--spacing-letter);
+}
+
+/* Info Box */
+.info-box {
+    background: var(--color-accent);
+    border: var(--border-standard);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.info-box p {
+    margin-bottom: 1rem;
+    letter-spacing: var(--spacing-letter);
+}
+
+.info-box p:last-child {
+    margin-bottom: 0;
+}
+
+/* Data Table */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+}
+
+.data-table thead tr {
+    border-bottom: var(--border-standard);
+}
+
+.data-table tbody tr {
+    border-bottom: var(--border-standard);
+}
+
+.data-table th {
+    text-align: left;
+    padding: 0.75rem;
+    font-weight: normal;
+    letter-spacing: var(--spacing-letter);
+}
+
+.data-table td {
+    padding: 0.75rem;
+}
+
+.data-table a {
+    color: var(--color-fg);
+    text-decoration: underline;
+}
+
+/* Section Title */
+.section-title {
+    font-size: 1.2rem;
+    margin-bottom: 1.5rem;
+    letter-spacing: var(--spacing-letter);
+    font-weight: normal;
 }

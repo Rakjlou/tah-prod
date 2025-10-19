@@ -42,6 +42,24 @@ app.use((req, res, next) => {
     next();
 });
 
+// Authentication middleware
+function requireAuth(req, res, next) {
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+    next();
+}
+
+function requireAdmin(req, res, next) {
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+    if (!hasRole(req.session.user.role, ROLES.ADMIN)) {
+        return res.status(403).send('Access denied');
+    }
+    next();
+}
+
 app.get('/', (req, res) => {
     res.render('index');
 });
@@ -104,15 +122,7 @@ app.get('/logout', (req, res) => {
     });
 });
 
-app.get('/admin', async (req, res) => {
-    if (!req.session.user) {
-        return res.redirect('/login');
-    }
-
-    if (!hasRole(req.session.user.role, ROLES.ADMIN)) {
-        return res.status(403).send('Access denied');
-    }
-
+app.get('/admin', requireAdmin, async (req, res) => {
     try {
         const config = await getAllConfig();
         res.render('admin', { config });
@@ -122,15 +132,7 @@ app.get('/admin', async (req, res) => {
     }
 });
 
-app.post('/admin', async (req, res) => {
-    if (!req.session.user) {
-        return res.redirect('/login');
-    }
-
-    if (!hasRole(req.session.user.role, ROLES.ADMIN)) {
-        return res.status(403).send('Access denied');
-    }
-
+app.post('/admin', requireAdmin, async (req, res) => {
     try {
         for (const [key, value] of Object.entries(req.body)) {
             await setConfig(key, value);
@@ -145,15 +147,7 @@ app.post('/admin', async (req, res) => {
     }
 });
 
-app.get('/auth/google', (req, res) => {
-    if (!req.session.user) {
-        return res.redirect('/login');
-    }
-
-    if (!hasRole(req.session.user.role, ROLES.ADMIN)) {
-        return res.status(403).send('Access denied');
-    }
-
+app.get('/auth/google', requireAdmin, (req, res) => {
     try {
         const authUrl = getAuthUrl();
         res.redirect(authUrl);
@@ -163,15 +157,7 @@ app.get('/auth/google', (req, res) => {
     }
 });
 
-app.get('/auth/google/callback', async (req, res) => {
-    if (!req.session.user) {
-        return res.redirect('/login');
-    }
-
-    if (!hasRole(req.session.user.role, ROLES.ADMIN)) {
-        return res.status(403).send('Access denied');
-    }
-
+app.get('/auth/google/callback', requireAdmin, async (req, res) => {
     const { code, error } = req.query;
 
     if (error) {
@@ -192,15 +178,7 @@ app.get('/auth/google/callback', async (req, res) => {
     }
 });
 
-app.get('/admin/bands', async (req, res) => {
-    if (!req.session.user) {
-        return res.redirect('/login');
-    }
-
-    if (!hasRole(req.session.user.role, ROLES.ADMIN)) {
-        return res.status(403).send('Access denied');
-    }
-
+app.get('/admin/bands', requireAdmin, async (req, res) => {
     try {
         const bands = await getAllBands();
         res.render('admin-bands', { bands });
@@ -210,15 +188,7 @@ app.get('/admin/bands', async (req, res) => {
     }
 });
 
-app.post('/admin/bands', async (req, res) => {
-    if (!req.session.user) {
-        return res.redirect('/login');
-    }
-
-    if (!hasRole(req.session.user.role, ROLES.ADMIN)) {
-        return res.status(403).send('Access denied');
-    }
-
+app.post('/admin/bands', requireAdmin, async (req, res) => {
     // Check if Google authenticated
     if (!req.session.googleTokens) {
         const bands = await getAllBands();

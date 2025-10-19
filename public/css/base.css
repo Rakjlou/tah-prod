@@ -1,3 +1,19 @@
+:root {
+    --color-bg: #000000;
+    --color-fg: #ffffff;
+    --color-accent: #1a1a1a;
+    --color-error: #ff0000;
+    --color-success: #00ff00;
+    --color-warning: #ffaa00;
+
+    --font-mono: Monaco, 'Courier New', monospace;
+
+    --border-standard: 1px solid var(--color-fg);
+
+    --spacing-letter: 0.05em;
+    --spacing-letter-wide: 0.1em;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -5,9 +21,9 @@
 }
 
 body {
-    font-family: Monaco, 'Courier New', monospace;
-    background-color: #000000;
-    color: #ffffff;
+    font-family: var(--font-mono);
+    background-color: var(--color-bg);
+    color: var(--color-fg);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -24,7 +40,7 @@ body {
 .main-content h1 {
     font-size: 2.5rem;
     font-weight: normal;
-    letter-spacing: 0.05em;
+    letter-spacing: var(--spacing-letter);
 }
 
 .container {

@@ -9,18 +9,9 @@
     <main class="main-content">
         <div class="form-container">
             <h1 class="form-title">Admin Panel</h1>
-            <% if (typeof success !== 'undefined' && success) { %>
-                <div class="error-message" style="border-color: #00ff00; color: #00ff00;">
-                    <%= success %>
-                </div>
-            <% } %>
-            <% if (typeof error !== 'undefined' && error) { %>
-                <div class="error-message">
-                    <%= error %>
-                </div>
-            <% } %>
+            <%- include('partials/messages') %>
             <div style="margin-bottom: 2rem;">
-                <a href="/admin/bands" class="nav-link" style="display: inline-block; margin-bottom: 1rem;">Manage Bands</a>
+                <a href="/admin/bands" class="nav-link" style="display: inline-block;">Manage Bands</a>
             </div>
 
             <form action="/admin" method="POST">

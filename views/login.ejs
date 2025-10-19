@@ -9,11 +9,7 @@
     <main class="main-content">
         <div class="form-container">
             <h1 class="form-title">Login</h1>
-            <% if (typeof error !== 'undefined' && error) { %>
-                <div class="error-message">
-                    <%= error %>
-                </div>
-            <% } %>
+            <%- include('partials/messages') %>
             <form action="/login" method="POST">
                 <div class="form-group">
                     <label for="login" class="form-label">Login</label>
