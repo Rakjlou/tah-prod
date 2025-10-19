@@ -29,7 +29,7 @@
             <% } %>
 
             <% if (googleConfigured && isGoogleAuthenticated) { %>
-            <form action="/bands" method="POST" style="margin-bottom: 3rem;">
+            <form id="band-form" action="/bands" method="POST" style="margin-bottom: 3rem;">
                 <h2 class="section-title">Add New Band</h2>
                 <div class="form-group">
                     <label for="name" class="form-label">Band Name</label>
@@ -39,7 +39,7 @@
                     <label for="email" class="form-label">Contact Email</label>
                     <input type="email" id="email" name="email" class="form-input" required>
                 </div>
-                <button type="submit" class="btn">Create Band & Spreadsheet</button>
+                <button type="submit" id="submit-btn" class="btn">Create Band & Spreadsheet</button>
             </form>
             <% } %>
 
@@ -78,5 +78,15 @@
     </main>
 
     <%- include('partials/footer') %>
+
+    <script>
+        document.getElementById('band-form')?.addEventListener('submit', function(e) {
+            const submitBtn = document.getElementById('submit-btn');
+
+            // Disable submit button and change text
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating...';
+        });
+    </script>
 </body>
 </html>

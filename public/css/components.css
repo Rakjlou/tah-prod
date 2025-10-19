@@ -116,6 +116,16 @@
     color: var(--color-bg);
 }
 
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn:disabled:hover {
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+}
+
 /* Messages */
 .error-message {
     padding: 1rem;
