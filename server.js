@@ -2,9 +2,11 @@ const express = require('express');
 const session = require('express-session');
 const SQLiteStore = require('connect-sqlite3')(session);
 const path = require('path');
-const { getUserByUsername, getAllConfig, setConfig } = require('./lib/db');
+const { getUserByUsername, getAllConfig, setConfig, getAllBands, createBand } = require('./lib/db');
 const { verifyPassword } = require('./lib/auth');
 const { ROLES, hasRole } = require('./lib/roles');
+const { createBandSpreadsheet } = require('./lib/google-sheets');
+const { getAuthUrl, getTokensFromCode, getAuthenticatedClient } = require('./lib/google-oauth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -32,6 +34,7 @@ app.use(session({
 
 app.use((req, res, next) => {
     res.locals.user = req.session.user || null;
+    res.locals.isGoogleAuthenticated = !!(req.session.googleTokens);
     res.locals.ROLES = ROLES;
     res.locals.hasRole = (role) => {
         return req.session.user ? hasRole(req.session.user.role, role) : false;
@@ -139,6 +142,111 @@ app.post('/admin', async (req, res) => {
         console.error('Error saving configuration:', error);
         const config = await getAllConfig();
         res.render('admin', { error: 'Failed to save configuration', config });
+    }
+});
+
+app.get('/auth/google', (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+
+    if (!hasRole(req.session.user.role, ROLES.ADMIN)) {
+        return res.status(403).send('Access denied');
+    }
+
+    try {
+        const authUrl = getAuthUrl();
+        res.redirect(authUrl);
+    } catch (error) {
+        console.error('Error generating auth URL:', error);
+        res.redirect('/admin/bands?error=' + encodeURIComponent('Failed to initiate Google authentication'));
+    }
+});
+
+app.get('/auth/google/callback', async (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+
+    if (!hasRole(req.session.user.role, ROLES.ADMIN)) {
+        return res.status(403).send('Access denied');
+    }
+
+    const { code, error } = req.query;
+
+    if (error) {
+        return res.redirect('/admin/bands?error=' + encodeURIComponent('Google authentication cancelled'));
+    }
+
+    if (!code) {
+        return res.redirect('/admin/bands?error=' + encodeURIComponent('No authorization code received'));
+    }
+
+    try {
+        const tokens = await getTokensFromCode(code);
+        req.session.googleTokens = tokens;
+        res.redirect('/admin/bands?success=' + encodeURIComponent('Google authentication successful'));
+    } catch (error) {
+        console.error('OAuth callback error:', error);
+        res.redirect('/admin/bands?error=' + encodeURIComponent('Authentication failed: ' + error.message));
+    }
+});
+
+app.get('/admin/bands', async (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+
+    if (!hasRole(req.session.user.role, ROLES.ADMIN)) {
+        return res.status(403).send('Access denied');
+    }
+
+    try {
+        const bands = await getAllBands();
+        res.render('admin-bands', { bands });
+    } catch (error) {
+        console.error('Error loading bands:', error);
+        res.render('admin-bands', { error: 'Failed to load bands', bands: [] });
+    }
+});
+
+app.post('/admin/bands', async (req, res) => {
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+
+    if (!hasRole(req.session.user.role, ROLES.ADMIN)) {
+        return res.status(403).send('Access denied');
+    }
+
+    // Check if Google authenticated
+    if (!req.session.googleTokens) {
+        const bands = await getAllBands();
+        return res.render('admin-bands', {
+            error: 'Please authenticate with Google first',
+            bands
+        });
+    }
+
+    try {
+        const { name, email } = req.body;
+
+        if (!name || !email) {
+            const bands = await getAllBands();
+            return res.render('admin-bands', { error: 'Name and email are required', bands });
+        }
+
+        const oauthClient = getAuthenticatedClient(req.session.googleTokens);
+        const { spreadsheetId } = await createBandSpreadsheet(oauthClient, name, email);
+
+        await createBand(name, email, spreadsheetId);
+
+        const bands = await getAllBands();
+        res.render('admin-bands', { success: `Band "${name}" created successfully!`, bands });
+    } catch (error) {
+        console.error('Error creating band:', error);
+        const bands = await getAllBands();
+        res.render('admin-bands', { error: 'Failed to create band: ' + error.message, bands });
     }
 });
 

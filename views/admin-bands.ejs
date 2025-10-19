@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <%- include('partials/head', { title: 'Manage Bands - Tah Prod' }) %>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <main class="main-content">
+        <div class="form-container" style="max-width: 900px;">
+            <h1 class="form-title">Manage Bands</h1>
+
+            <% if (typeof success !== 'undefined' && success) { %>
+                <div class="error-message" style="border-color: #00ff00; color: #00ff00;">
+                    <%= success %>
+                </div>
+            <% } %>
+            <% if (typeof error !== 'undefined' && error) { %>
+                <div class="error-message">
+                    <%= error %>
+                </div>
+            <% } %>
+
+            <% if (!isGoogleAuthenticated) { %>
+                <div style="background: #1a1a1a; border: 1px solid #ffffff; padding: 1.5rem; margin-bottom: 2rem;">
+                    <p style="margin-bottom: 1rem; letter-spacing: 0.05em;">
+                        To create band spreadsheets, you need to authenticate with Google first.
+                    </p>
+                    <a href="/auth/google" class="btn" style="text-decoration: none; display: inline-block;">
+                        Authenticate with Google
+                    </a>
+                </div>
+            <% } %>
+
+            <% if (isGoogleAuthenticated) { %>
+            <form action="/admin/bands" method="POST" style="margin-bottom: 3rem;">
+                <h2 style="font-size: 1.2rem; margin-bottom: 1.5rem; letter-spacing: 0.05em;">Add New Band</h2>
+                <div class="form-group">
+                    <label for="name" class="form-label">Band Name</label>
+                    <input type="text" id="name" name="name" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="email" class="form-label">Contact Email</label>
+                    <input type="email" id="email" name="email" class="form-input" required>
+                </div>
+                <button type="submit" class="btn">Create Band & Spreadsheet</button>
+            </form>
+            <% } %>
+
+            <% if (bands && bands.length > 0) { %>
+                <h2 style="font-size: 1.2rem; margin-bottom: 1.5rem; letter-spacing: 0.05em;">Existing Bands</h2>
+                <table style="width: 100%; border-collapse: collapse; font-family: Monaco, 'Courier New', monospace;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid #ffffff;">
+                            <th style="text-align: left; padding: 0.75rem; font-weight: normal; letter-spacing: 0.05em;">Name</th>
+                            <th style="text-align: left; padding: 0.75rem; font-weight: normal; letter-spacing: 0.05em;">Email</th>
+                            <th style="text-align: left; padding: 0.75rem; font-weight: normal; letter-spacing: 0.05em;">Spreadsheet</th>
+                            <th style="text-align: left; padding: 0.75rem; font-weight: normal; letter-spacing: 0.05em;">Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% bands.forEach(band => { %>
+                            <tr style="border-bottom: 1px solid #ffffff;">
+                                <td style="padding: 0.75rem;"><%= band.name %></td>
+                                <td style="padding: 0.75rem;"><%= band.email %></td>
+                                <td style="padding: 0.75rem;">
+                                    <% if (band.spreadsheet_id) { %>
+                                        <a href="https://docs.google.com/spreadsheets/d/<%= band.spreadsheet_id %>" target="_blank" style="color: #ffffff; text-decoration: underline;">View Sheet</a>
+                                    <% } else { %>
+                                        N/A
+                                    <% } %>
+                                </td>
+                                <td style="padding: 0.75rem;"><%= new Date(band.created_at).toLocaleDateString() %></td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            <% } else { %>
+                <p style="text-align: center; padding: 2rem; letter-spacing: 0.05em;">No bands created yet.</p>
+            <% } %>
+        </div>
+    </main>
+
+    <%- include('partials/footer') %>
+</body>
+</html>
