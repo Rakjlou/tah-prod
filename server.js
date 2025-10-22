@@ -5,7 +5,7 @@ const path = require('path');
 const { getUserByUsername, getAllConfig, getAllBands, createBand } = require('./lib/db');
 const { verifyPassword } = require('./lib/auth');
 const { ROLES, hasRole } = require('./lib/roles');
-const { createBandSpreadsheet } = require('./lib/google-sheets');
+const { createBandStructure } = require('./lib/google-drive');
 const { getOAuthClient, getAuthUrl, getTokensFromCode, getAuthenticatedClient } = require('./lib/google-oauth');
 const configService = require('./lib/config-service');
 
@@ -237,13 +237,24 @@ app.post('/bands', requireAdmin, async (req, res) => {
             return res.render('bands', { error: 'Google OAuth not configured', bands });
         }
 
+        const parentFolderId = await configService.getGoogleDriveFolderId();
+
+        if (!parentFolderId) {
+            const bands = await getAllBands();
+            return res.render('bands', { error: 'Google Drive folder not configured', bands });
+        }
+
         const oauthClient = getOAuthClient(googleAuth);
         const authenticatedClient = getAuthenticatedClient(req.session.googleTokens, oauthClient);
-        const folderId = await configService.getGoogleDriveFolderId();
 
-        const { spreadsheetId } = await createBandSpreadsheet(authenticatedClient, name, email, folderId);
+        const { folderId, accountingSpreadsheetId, invoicesFolderId } = await createBandStructure(
+            authenticatedClient,
+            name,
+            email,
+            parentFolderId
+        );
 
-        await createBand(name, email, spreadsheetId);
+        await createBand(name, email, folderId, accountingSpreadsheetId, invoicesFolderId);
 
         const bands = await getAllBands();
         res.render('bands', { success: `Band "${name}" created successfully!`, bands });

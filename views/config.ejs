@@ -26,8 +26,8 @@
                     <input type="text" id="google_redirect_uri" name="google_redirect_uri" class="form-input" value="<%= typeof config !== 'undefined' && config.google_redirect_uri ? config.google_redirect_uri : '' %>" placeholder="http://localhost:3000/auth/google/callback">
                 </div>
                 <div class="form-group">
-                    <label for="google_drive_folder_id" class="form-label">Google Drive Folder ID (Optional)</label>
-                    <input type="text" id="google_drive_folder_id" name="google_drive_folder_id" class="form-input" value="<%= typeof config !== 'undefined' && config.google_drive_folder_id ? config.google_drive_folder_id : '' %>" placeholder="Folder ID from Google Drive URL">
+                    <label for="google_drive_folder_id" class="form-label">Google Drive Folder ID</label>
+                    <input type="text" id="google_drive_folder_id" name="google_drive_folder_id" class="form-input" value="<%= typeof config !== 'undefined' && config.google_drive_folder_id ? config.google_drive_folder_id : '' %>" placeholder="Folder ID from Google Drive URL" required>
                 </div>
                 <button type="submit" class="btn">Save Configuration</button>
             </form>
