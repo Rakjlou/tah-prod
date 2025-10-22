@@ -18,6 +18,12 @@
     font-size: 1.2rem;
     font-weight: bold;
     letter-spacing: var(--spacing-letter-wide);
+    color: var(--color-fg);
+    text-decoration: none;
+}
+
+.nav-brand:hover {
+    color: var(--color-fg);
 }
 
 .nav-links {
@@ -170,6 +176,11 @@
 
 .info-box p:last-child {
     margin-bottom: 0;
+}
+
+.info-box a {
+    color: var(--color-fg);
+    text-decoration: underline;
 }
 
 .info-box-divider {

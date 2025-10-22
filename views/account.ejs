@@ -17,23 +17,14 @@
                     <p><strong>Band Name:</strong> <%= band.name %></p>
                     <p><strong>Email:</strong> <%= band.email %></p>
 
-                    <% if (band.folder_id || band.accounting_spreadsheet_id) { %>
+                    <% if (band.folder_id) { %>
                         <div class="info-box-divider">
                             <h3 class="section-title">Google Drive Resources</h3>
-                            <% if (band.folder_id) { %>
-                                <p>
-                                    <a href="https://drive.google.com/drive/folders/<%= band.folder_id %>" target="_blank">
-                                        View Band Folder
-                                    </a>
-                                </p>
-                            <% } %>
-                            <% if (band.accounting_spreadsheet_id) { %>
-                                <p>
-                                    <a href="https://docs.google.com/spreadsheets/d/<%= band.accounting_spreadsheet_id %>" target="_blank">
-                                        View Accounting Spreadsheet
-                                    </a>
-                                </p>
-                            <% } %>
+                            <p>
+                                <a href="https://drive.google.com/drive/folders/<%= band.folder_id %>" target="_blank">
+                                    View Band Folder
+                                </a>
+                            </p>
                         </div>
                     <% } %>
                 </div>
