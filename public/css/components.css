@@ -126,6 +126,12 @@
     color: var(--color-fg);
 }
 
+.btn-small {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    width: auto;
+}
+
 /* Messages */
 .error-message {
     padding: 1rem;
@@ -164,6 +170,12 @@
 
 .info-box p:last-child {
     margin-bottom: 0;
+}
+
+.info-box-divider {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: var(--border-standard);
 }
 
 /* Data Table */

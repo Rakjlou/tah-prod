@@ -7,7 +7,7 @@
     <%- include('partials/navbar') %>
 
     <main class="main-content">
-        <div class="form-container" style="max-width: 900px;">
+        <div class="form-container" style="max-width: 900px; width: 100%;">
             <h1 class="form-title">Bands</h1>
             <%- include('partials/messages') %>
 
@@ -22,14 +22,14 @@
                     <p>
                         To create band spreadsheets, you need to authenticate with Google first.
                     </p>
-                    <a href="/auth/google" class="btn" style="text-decoration: none; display: inline-block;">
+                    <a href="/auth/google" class="btn">
                         Authenticate with Google
                     </a>
                 </div>
             <% } %>
 
             <% if (googleConfigured && isGoogleAuthenticated) { %>
-            <form id="band-form" action="/bands" method="POST" style="margin-bottom: 3rem;">
+            <form id="band-form" action="/bands" method="POST" class="info-box">
                 <h2 class="section-title">Add New Band</h2>
                 <div class="form-group">
                     <label for="name" class="form-label">Band Name</label>
@@ -52,6 +52,7 @@
                             <th>Email</th>
                             <th>Folder</th>
                             <th>Created</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -67,12 +68,17 @@
                                     <% } %>
                                 </td>
                                 <td><%= new Date(band.created_at).toLocaleDateString() %></td>
+                                <td>
+                                    <form action="/admin/bands/<%= band.id %>/reset-password" method="POST" style="display: inline;">
+                                        <button type="submit" class="btn btn-small">Reset Password</button>
+                                    </form>
+                                </td>
                             </tr>
                         <% }); %>
                     </tbody>
                 </table>
             <% } else { %>
-                <p style="text-align: center; padding: 2rem; letter-spacing: 0.05em;">No bands created yet.</p>
+                <p style="text-align: center; padding: 2rem;">No bands created yet.</p>
             <% } %>
         </div>
     </main>

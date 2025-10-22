@@ -6,6 +6,8 @@
                 <% if (hasRole(ROLES.ADMIN)) { %>
                     <a href="/bands" class="nav-link">Bands</a>
                     <a href="/config" class="nav-link">Config</a>
+                <% } else if (hasRole(ROLES.BAND)) { %>
+                    <a href="/account" class="nav-link">My Account</a>
                 <% } %>
                 <a href="/logout" class="nav-link">Disconnect</a>
             <% } else { %>

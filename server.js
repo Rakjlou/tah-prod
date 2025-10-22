@@ -2,11 +2,12 @@ const express = require('express');
 const session = require('express-session');
 const SQLiteStore = require('connect-sqlite3')(session);
 const path = require('path');
-const { getUserByUsername, getAllConfig, getAllBands, createBand } = require('./lib/db');
-const { verifyPassword } = require('./lib/auth');
+const { createUser, getUserByUsername, getUserById, updateUserPassword, getAllConfig, getAllBands, createBand, getBandById, getBandByUserId } = require('./lib/db');
+const { verifyPassword, hashPassword } = require('./lib/auth');
 const { ROLES, hasRole } = require('./lib/roles');
 const { createBandStructure } = require('./lib/google-drive');
 const { getOAuthClient, getAuthUrl, getTokensFromCode, getAuthenticatedClient } = require('./lib/google-oauth');
+const { sendBandWelcomeEmail, sendPasswordResetEmail } = require('./lib/email');
 const configService = require('./lib/config-service');
 
 const app = express();
@@ -68,6 +69,26 @@ function requireAdmin(req, res, next) {
         return res.status(403).send('Access denied');
     }
     next();
+}
+
+function requireBand(req, res, next) {
+    if (!req.session.user) {
+        return res.redirect('/login');
+    }
+    if (!hasRole(req.session.user.role, ROLES.BAND)) {
+        return res.status(403).send('Access denied');
+    }
+    next();
+}
+
+function generateRandomPassword() {
+    // Generate a 12-character password: mix of uppercase, lowercase, numbers
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
 }
 
 app.get('/', (req, res) => {
@@ -254,14 +275,119 @@ app.post('/bands', requireAdmin, async (req, res) => {
             parentFolderId
         );
 
-        await createBand(name, email, folderId, accountingSpreadsheetId, invoicesFolderId);
+        // Create band user account
+        const temporaryPassword = generateRandomPassword();
+        const hashedPassword = await hashPassword(temporaryPassword);
+        const userId = await createUser(email, hashedPassword, ROLES.BAND);
+
+        // Create band record linked to the user
+        await createBand(name, email, userId, folderId, accountingSpreadsheetId, invoicesFolderId);
+
+        // Log credentials for admin to share
+        await sendBandWelcomeEmail(email, email, temporaryPassword);
 
         const bands = await getAllBands();
-        res.render('bands', { success: `Band "${name}" created successfully!`, bands });
+        res.render('bands', {
+            success: `Band "${name}" created successfully! Username: ${email} | Password: ${temporaryPassword}`,
+            bands
+        });
     } catch (error) {
         console.error('Error creating band:', error);
         const bands = await getAllBands();
         res.render('bands', { error: 'Failed to create band: ' + error.message, bands });
+    }
+});
+
+// Band account routes
+app.get('/account', requireBand, async (req, res) => {
+    try {
+        const band = await getBandByUserId(req.session.user.id);
+
+        if (!band) {
+            return res.status(404).send('Band not found');
+        }
+
+        res.render('account', { band });
+    } catch (error) {
+        console.error('Error loading account:', error);
+        res.render('account', { error: 'Failed to load account' });
+    }
+});
+
+app.post('/account/password', requireBand, async (req, res) => {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+
+    const renderWithBand = async (data) => {
+        const band = await getBandByUserId(req.session.user.id);
+        return res.render('account', { band, ...data });
+    };
+
+    try {
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            return renderWithBand({ error: 'All fields are required' });
+        }
+
+        if (newPassword !== confirmPassword) {
+            return renderWithBand({ error: 'New passwords do not match' });
+        }
+
+        if (newPassword.length < 6) {
+            return renderWithBand({ error: 'Password must be at least 6 characters' });
+        }
+
+        // Verify current password
+        const user = await getUserById(req.session.user.id);
+        const isValid = await verifyPassword(currentPassword, user.password);
+
+        if (!isValid) {
+            return renderWithBand({ error: 'Current password is incorrect' });
+        }
+
+        // Update password
+        const hashedPassword = await hashPassword(newPassword);
+        await updateUserPassword(req.session.user.id, hashedPassword);
+
+        return renderWithBand({ success: 'Password changed successfully' });
+    } catch (error) {
+        console.error('Error changing password:', error);
+        return renderWithBand({ error: 'Failed to change password' });
+    }
+});
+
+// Admin password reset route
+app.post('/admin/bands/:id/reset-password', requireAdmin, async (req, res) => {
+    try {
+        const bandId = req.params.id;
+        const band = await getBandById(bandId);
+
+        if (!band) {
+            const bands = await getAllBands();
+            return res.render('bands', {
+                error: 'Band not found',
+                bands
+            });
+        }
+
+        // Generate new password
+        const newPassword = generateRandomPassword();
+        const hashedPassword = await hashPassword(newPassword);
+        await updateUserPassword(band.user_id, hashedPassword);
+
+        // Log credentials for admin
+        await sendPasswordResetEmail(band.email, newPassword);
+
+        const bands = await getAllBands();
+        res.render('bands', {
+            success: `Password reset for "${band.name}". New password: ${newPassword}`,
+            bands
+        });
+    } catch (error) {
+        console.error('Error resetting password:', error);
+        const bands = await getAllBands();
+        res.render('bands', {
+            error: 'Failed to reset password: ' + error.message,
+            bands
+        });
     }
 });
 
