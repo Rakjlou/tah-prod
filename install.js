@@ -1,7 +1,7 @@
 const readline = require('readline');
 const fs = require('fs');
 const path = require('path');
-const { initializeDatabase, createUser } = require('./lib/db');
+const { initializeDatabase, createUser, setConfig } = require('./lib/db');
 const { hashPassword } = require('./lib/auth');
 const { ROLES } = require('./lib/roles');
 
@@ -92,6 +92,44 @@ async function install() {
 
         console.log('Creating admin user...');
         await createUser(username.trim(), hashedPassword, ROLES.ADMIN);
+
+        console.log('');
+        console.log('='.repeat(50));
+        console.log('Google OAuth Configuration (Optional)');
+        console.log('='.repeat(50));
+        console.log('You can configure Google OAuth now or later via /config');
+        console.log('');
+
+        const configureOAuth = await question('Configure Google OAuth now? (y/n): ');
+
+        if (configureOAuth.toLowerCase() === 'y' || configureOAuth.toLowerCase() === 'yes') {
+            const envClientId = process.env.GOOGLE_CLIENT_ID || '';
+            const envClientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
+            const envRedirectUri = process.env.GOOGLE_REDIRECT_URI || '';
+            const envFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID || '';
+
+            const clientId = await question(`Google Client ID [${envClientId}]: `) || envClientId;
+            const clientSecret = await question(`Google Client Secret [${envClientSecret}]: `) || envClientSecret;
+            const redirectUri = await question(`Google Redirect URI [${envRedirectUri}]: `) || envRedirectUri;
+            const folderId = await question(`Google Drive Folder ID [${envFolderId}]: `) || envFolderId;
+
+            if (clientId) {
+                await setConfig('google_client_id', clientId);
+                console.log('✓ Google Client ID saved');
+            }
+            if (clientSecret) {
+                await setConfig('google_client_secret', clientSecret);
+                console.log('✓ Google Client Secret saved');
+            }
+            if (redirectUri) {
+                await setConfig('google_redirect_uri', redirectUri);
+                console.log('✓ Google Redirect URI saved');
+            }
+            if (folderId) {
+                await setConfig('google_drive_folder_id', folderId);
+                console.log('✓ Google Drive Folder ID saved');
+            }
+        }
 
         console.log('');
         console.log('='.repeat(50));

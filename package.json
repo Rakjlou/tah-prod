@@ -6,7 +6,7 @@
         "test": "echo \"Error: no test specified\" && exit 1",
         "start": "node --env-file=.env server.js",
         "local": "node server.js",
-        "install-db": "node install.js"
+        "install-db": "node --env-file=.env install.js"
     },
     "author": "Noé Sierra Velasquez",
     "license": "ISC",
