@@ -25,11 +25,17 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: false }));
 
+const SESSIONS_DB_DIR = path.join(__dirname, 'data');
+const SESSIONS_DB_NAME = 'sessions.db';
+const SESSIONS_DB_PATH = path.join(SESSIONS_DB_DIR, SESSIONS_DB_NAME);
+
+const sessionStore = new SQLiteStore({
+    db: SESSIONS_DB_NAME,
+    dir: SESSIONS_DB_DIR
+});
+
 app.use(session({
-    store: new SQLiteStore({
-        db: 'sessions.db',
-        dir: path.join(__dirname, 'data')
-    }),
+    store: sessionStore,
     secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
@@ -37,6 +43,51 @@ app.use(session({
         maxAge: SESSION_MAX_AGE
     }
 }));
+
+// Helper function to destroy all sessions for a specific user
+function destroyUserSessions(userId) {
+    return new Promise((resolve, reject) => {
+        const sqlite3 = require('sqlite3').verbose();
+        const sessionsDb = new sqlite3.Database(SESSIONS_DB_PATH);
+
+        // Query sessions table to find sessions containing the user ID
+        sessionsDb.all('SELECT sid, sess FROM sessions', [], (err, rows) => {
+            if (err) {
+                sessionsDb.close();
+                return reject(err);
+            }
+
+            const destroyPromises = [];
+            rows.forEach(row => {
+                try {
+                    const sessionData = JSON.parse(row.sess);
+                    if (sessionData && sessionData.user && sessionData.user.id === userId) {
+                        destroyPromises.push(
+                            new Promise((res, rej) => {
+                                sessionStore.destroy(row.sid, (err) => {
+                                    if (err) rej(err);
+                                    else res();
+                                });
+                            })
+                        );
+                    }
+                } catch (parseError) {
+                    // Skip invalid session data
+                }
+            });
+
+            Promise.all(destroyPromises)
+                .then(() => {
+                    sessionsDb.close();
+                    resolve();
+                })
+                .catch((err) => {
+                    sessionsDb.close();
+                    reject(err);
+                });
+        });
+    });
+}
 
 app.use(async (req, res, next) => {
     res.locals.user = req.session.user || null;
@@ -587,6 +638,9 @@ app.post('/admin/bands/:id/delete', requireAdmin, async (req, res) => {
                 // Continue with deletion even if Drive cleanup fails
             }
         }
+
+        // Invalidate all sessions for this user
+        await destroyUserSessions(band.user_id);
 
         // Delete the user (this will cascade delete the band and all transactions)
         await deleteUser(band.user_id);
