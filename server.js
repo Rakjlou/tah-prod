@@ -2,7 +2,7 @@ const express = require('express');
 const session = require('express-session');
 const SQLiteStore = require('connect-sqlite3')(session);
 const path = require('path');
-const { createUser, getUserByUsername, getUserById, updateUserPassword, getAllConfig, getAllBands, createBand, getBandById, getBandByUserId, getAllCategories, createCategory, deleteCategory, seedDefaultCategories, createTransaction, getTransactionById, getTransactionsByBand, getAllTransactionsWithBands, updateTransaction, deleteTransaction, validateTransaction, getBalanceForBand, addTransactionDocument, getTransactionDocuments, deleteTransactionDocument } = require('./lib/db');
+const { createUser, getUserByUsername, getUserById, updateUserPassword, deleteUser, getAllConfig, getAllBands, createBand, getBandById, getBandByUserId, getAllCategories, createCategory, deleteCategory, seedDefaultCategories, createTransaction, getTransactionById, getTransactionsByBand, getAllTransactionsWithBands, updateTransaction, deleteTransaction, validateTransaction, getBalanceForBand, addTransactionDocument, getTransactionDocuments, deleteTransactionDocument } = require('./lib/db');
 const { verifyPassword, hashPassword } = require('./lib/auth');
 const { ROLES, hasRole } = require('./lib/roles');
 const { createBandStructure, getTransactionsFolderId, createTransactionFolder, uploadTransactionDocument, deleteTransactionFolder, deleteFile } = require('./lib/google-drive');
@@ -557,6 +557,54 @@ app.post('/admin/bands/:id/reset-password', requireAdmin, async (req, res) => {
         const bands = await getAllBands();
         res.render('bands', {
             error: 'Failed to reset password: ' + error.message,
+            bands
+        });
+    }
+});
+
+app.post('/admin/bands/:id/delete', requireAdmin, async (req, res) => {
+    try {
+        const bandId = req.params.id;
+        const band = await getBandById(bandId);
+
+        if (!band) {
+            const bands = await getAllBands();
+            return res.render('bands', {
+                error: 'Band not found',
+                bands
+            });
+        }
+
+        // Delete Google Drive folder if it exists
+        let driveDeleteError = null;
+        if (band.folder_id) {
+            try {
+                const oauthClient = await googleAuth.getAuthenticatedClient();
+                await deleteFile(oauthClient, band.folder_id);
+            } catch (driveError) {
+                console.error('Error deleting Google Drive folder:', driveError);
+                driveDeleteError = driveError.message;
+                // Continue with deletion even if Drive cleanup fails
+            }
+        }
+
+        // Delete the user (this will cascade delete the band and all transactions)
+        await deleteUser(band.user_id);
+
+        const bands = await getAllBands();
+        const successMessage = driveDeleteError
+            ? `Band "${band.name}" has been deleted (Warning: Google Drive folder could not be deleted: ${driveDeleteError})`
+            : `Band "${band.name}" has been deleted`;
+
+        res.render('bands', {
+            success: successMessage,
+            bands
+        });
+    } catch (error) {
+        console.error('Error deleting band:', error);
+        const bands = await getAllBands();
+        res.render('bands', {
+            error: 'Failed to delete band: ' + error.message,
             bands
         });
     }
