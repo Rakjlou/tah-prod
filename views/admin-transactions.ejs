@@ -52,12 +52,7 @@
                 <%- include('partials/transaction-table', {
                     transactions,
                     showBandColumn: true,
-                    canEdit: (t) => false,
-                    canValidate: true,
-                    canDelete: (t) => true,
-                    editUrlPrefix: '',
-                    validateUrlPrefix: '/admin/transactions',
-                    deleteUrlPrefix: '/admin/transactions'
+                    detailUrlPrefix: '/admin/transactions'
                 }) %>
             </div>
         </div>

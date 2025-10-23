@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <%- include('partials/head', { title: 'Transaction Details - Tah Prod' }) %>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <main class="main-content">
+        <div class="form-container" style="max-width: 900px; width: 100%;">
+            <h1 class="form-title">Transaction Details</h1>
+            <%- include('partials/messages') %>
+
+            <%
+            // Compute permissions based on role
+            const canEdit = isAdmin || transaction.status === 'pending';
+            const canDelete = isAdmin || transaction.status === 'pending';
+            %>
+
+            <!-- Transaction ID (Read-only) -->
+            <div class="info-box">
+                <p><strong>Transaction ID:</strong> <%= transaction.id %></p>
+                <p><strong>Band:</strong> <%= transaction.band_name %></p>
+                <p><strong>Status:</strong>
+                    <% if (transaction.status === 'pending') { %>
+                        <span style="background-color: #ffeb3b; color: #000; padding: 0.25rem 0.5rem; border: 1px solid #000;">PENDING</span>
+                    <% } else { %>
+                        <span style="background-color: #4caf50; color: #fff; padding: 0.25rem 0.5rem; border: 1px solid #000;">VALIDATED</span>
+                    <% } %>
+                </p>
+                <% if (transaction.transaction_date) { %>
+                    <p><strong>Transaction Date:</strong> <%= new Date(transaction.transaction_date).toLocaleDateString() %></p>
+                <% } %>
+                <p><strong>Created:</strong> <%= new Date(transaction.created_at).toLocaleDateString() %></p>
+            </div>
+
+            <!-- Edit Transaction Form -->
+            <% if (canEdit) { %>
+                <div class="info-box">
+                    <h2 class="section-title">Edit Transaction</h2>
+                    <%- include('partials/transaction-form', {
+                        formAction: urlPrefix + '/' + transaction.id + '/edit',
+                        transaction: transaction,
+                        categories: categories,
+                        canEditStatus: isAdmin
+                    }) %>
+                </div>
+            <% } else { %>
+                <div class="info-box">
+                    <h2 class="section-title">Transaction Details</h2>
+                    <p><strong>Type:</strong> <%= transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1) %></p>
+                    <p><strong>Category:</strong> <%= transaction.category_name %></p>
+                    <p><strong>Amount:</strong> €<%= transaction.amount.toFixed(2) %></p>
+                    <p><strong>Description:</strong></p>
+                    <p style="white-space: pre-wrap;"><%= transaction.description %></p>
+                </div>
+            <% } %>
+
+            <!-- Document Management -->
+            <div class="info-box">
+                <h2 class="section-title">Documents</h2>
+
+                <% if (!transaction.drive_folder_id) { %>
+                    <!-- No folder exists -->
+                    <p style="margin-bottom: 1rem;">No documents folder yet.</p>
+                    <form id="create-folder-form" action="<%= urlPrefix %>/<%= transaction.id %>/create-folder" method="POST">
+                        <button type="submit" class="btn" id="create-folder-btn">Create Documents Folder</button>
+                    </form>
+                <% } else { %>
+                    <!-- Folder exists - show documents -->
+                    <% if (documents && documents.length > 0) { %>
+                        <table class="data-table" style="margin-bottom: 1.5rem;">
+                            <thead>
+                                <tr>
+                                    <th>Filename</th>
+                                    <th>Uploaded</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% documents.forEach(doc => { %>
+                                    <tr>
+                                        <td>
+                                            <a href="https://drive.google.com/file/d/<%= doc.drive_file_id %>/view" target="_blank">
+                                                <%= doc.filename %>
+                                            </a>
+                                        </td>
+                                        <td><%= new Date(doc.uploaded_at).toLocaleDateString() %></td>
+                                        <td>
+                                            <form action="<%= urlPrefix %>/<%= transaction.id %>/documents/<%= doc.id %>/delete" method="POST" style="display: inline;">
+                                                <button type="submit" class="btn btn-small" onclick="return confirm('Delete this document?')">Delete</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    <% } else { %>
+                        <p style="margin-bottom: 1rem;">No documents uploaded yet.</p>
+                    <% } %>
+
+                    <!-- Upload form -->
+                    <h3 class="section-title" style="font-size: 1rem; margin-top: 1.5rem; margin-bottom: 1rem;">Upload Documents</h3>
+                    <form id="upload-form" action="<%= urlPrefix %>/<%= transaction.id %>/documents" method="POST" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="documents" class="form-label">Select files</label>
+                            <input
+                                type="file"
+                                id="documents"
+                                name="documents"
+                                class="form-input"
+                                multiple
+                                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                                required
+                            >
+                        </div>
+                        <button type="submit" class="btn" id="upload-btn">Upload Documents</button>
+                    </form>
+
+                    <!-- Link to folder -->
+                    <div style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: var(--border-standard);">
+                        <a href="https://drive.google.com/drive/folders/<%= transaction.drive_folder_id %>" target="_blank" class="btn btn-small">
+                            View Folder in Google Drive
+                        </a>
+                    </div>
+                <% } %>
+            </div>
+
+            <!-- Delete Transaction -->
+            <% if (canDelete) { %>
+                <div class="info-box">
+                    <h2 class="section-title">Delete Transaction</h2>
+                    <form action="<%= urlPrefix %>/<%= transaction.id %>/delete" method="POST">
+                        <button type="submit" class="btn" onclick="return confirm('<%= transaction.status === 'validated' ? 'This transaction is validated. Really delete?' : 'Delete this transaction?' %>')">
+                            Delete Transaction
+                        </button>
+                    </form>
+                </div>
+            <% } %>
+
+            <div style="margin-top: 2rem;">
+                <a href="<%= backUrl %>" class="btn">Back to All Transactions</a>
+            </div>
+        </div>
+    </main>
+
+    <%- include('partials/footer') %>
+
+    <script>
+    // Create folder form - show loading state
+    document.getElementById('create-folder-form')?.addEventListener('submit', function(e) {
+        const createFolderBtn = document.getElementById('create-folder-btn');
+        createFolderBtn.disabled = true;
+        createFolderBtn.textContent = 'Creating...';
+    });
+
+    // Upload form - show loading state
+    document.getElementById('upload-form')?.addEventListener('submit', function(e) {
+        const uploadBtn = document.getElementById('upload-btn');
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = 'Uploading...';
+    });
+    </script>
+</body>
+</html>

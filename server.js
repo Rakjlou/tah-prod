@@ -751,6 +751,51 @@ app.post('/transactions', requireBand, upload.array('documents', 10), async (req
     }
 });
 
+// Shared handler for transaction detail view (both bands and admins)
+async function handleTransactionDetail(req, res) {
+    try {
+        const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
+        const transaction = await getTransactionById(req.params.id);
+
+        if (!transaction) {
+            req.session.error = 'Transaction not found';
+            return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
+        }
+
+        // Verify ownership for bands
+        if (!isAdmin) {
+            const band = await getBandByUserId(req.session.user.id);
+            if (!band || transaction.band_id !== band.id) {
+                req.session.error = 'Access denied';
+                return res.redirect('/transactions');
+            }
+        }
+
+        const categories = await getAllCategories();
+        const documents = await getTransactionDocuments(req.params.id);
+
+        const urlPrefix = isAdmin ? '/admin/transactions' : '/transactions';
+        const backUrl = isAdmin ? '/admin/transactions' : '/transactions';
+
+        res.render('transaction-detail', {
+            transaction,
+            categories,
+            documents,
+            urlPrefix,
+            backUrl,
+            isAdmin
+        });
+    } catch (error) {
+        console.error('Error loading transaction details:', error);
+        req.session.error = 'Failed to load transaction details';
+        const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
+        res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
+    }
+}
+
+app.get('/transactions/:id', requireBand, handleTransactionDetail);
+app.get('/admin/transactions/:id', requireAdmin, handleTransactionDetail);
+
 app.get('/transactions/:id/edit', requireBand, async (req, res) => {
     try {
         const band = await getBandByUserId(req.session.user.id);
@@ -775,40 +820,74 @@ app.get('/transactions/:id/edit', requireBand, async (req, res) => {
     }
 });
 
-app.post('/transactions/:id', requireBand, async (req, res) => {
+// Shared handler for transaction edit (both bands and admins)
+async function handleTransactionEdit(req, res) {
     try {
-        const band = await getBandByUserId(req.session.user.id);
-        if (!band) {
-            return res.status(404).send('Band not found');
-        }
-
+        const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
         const transaction = await getTransactionById(req.params.id);
-        if (!transaction || transaction.band_id !== band.id) {
-            return res.status(404).send('Transaction not found');
+
+        if (!transaction) {
+            req.session.error = 'Transaction not found';
+            return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
         }
 
-        if (transaction.status !== 'pending') {
-            return res.redirect('/transactions?error=' + encodeURIComponent('Cannot edit validated transaction'));
+        // Verify ownership for bands
+        if (!isAdmin) {
+            const band = await getBandByUserId(req.session.user.id);
+            if (!band || transaction.band_id !== band.id) {
+                req.session.error = 'Access denied';
+                return res.redirect('/transactions');
+            }
+            // Bands can only edit pending transactions
+            if (transaction.status !== 'pending') {
+                req.session.error = 'Cannot edit validated transaction';
+                return res.redirect('/transactions/' + req.params.id);
+            }
         }
 
-        const { amount, category_id, description } = req.body;
-        await updateTransaction(req.params.id, {
-            amount: parseFloat(amount),
+        const { type, category_id, amount, description, status, transaction_date, clear_date } = req.body;
+
+        const updates = {
+            type,
             category_id: parseInt(category_id),
+            amount: parseFloat(amount),
             description
-        });
+        };
+
+        // Only admins can change status and transaction_date
+        if (isAdmin) {
+            if (status) updates.status = status;
+            if (clear_date === 'true') {
+                updates.transaction_date = null;
+            } else if (transaction_date) {
+                updates.transaction_date = transaction_date;
+            }
+        }
+
+        await updateTransaction(req.params.id, updates);
 
         // Sync to Google Sheets
-        const transactions = await getTransactionsByBand(band.id);
+        const band = await getBandById(transaction.band_id);
+        if (!band) {
+            req.session.error = 'Associated band not found';
+            return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
+        }
+        const transactions = await getTransactionsByBand(transaction.band_id);
         const authenticatedClient = await googleAuth.getAuthenticatedClient();
         await syncTransactionsToSheet(authenticatedClient, band.accounting_spreadsheet_id, transactions);
 
-        res.redirect('/transactions?success=' + encodeURIComponent('Transaction updated successfully'));
+        req.session.success = 'Transaction updated successfully';
+        res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
     } catch (error) {
         console.error('Error updating transaction:', error);
-        res.redirect('/transactions/' + req.params.id + '/edit?error=' + encodeURIComponent('Failed to update transaction'));
+        req.session.error = 'Failed to update transaction';
+        const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
+        res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
     }
-});
+}
+
+app.post('/transactions/:id/edit', requireBand, handleTransactionEdit);
+app.post('/admin/transactions/:id/edit', requireAdmin, handleTransactionEdit);
 
 app.post('/transactions/:id/delete', requireBand, async (req, res) => {
     try {
@@ -846,43 +925,94 @@ app.post('/transactions/:id/delete', requireBand, async (req, res) => {
     }
 });
 
-app.get('/transactions/:id/documents', requireBand, async (req, res) => {
+// Shared handler for create folder (both bands and admins)
+async function handleCreateFolder(req, res) {
     try {
-        const band = await getBandByUserId(req.session.user.id);
-        if (!band) {
-            return res.status(404).send('Band not found');
-        }
-
+        const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
         const transaction = await getTransactionById(req.params.id);
-        if (!transaction || transaction.band_id !== band.id) {
-            return res.status(404).send('Transaction not found');
+
+        if (!transaction) {
+            req.session.error = 'Transaction not found';
+            return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
         }
 
-        const documents = await getTransactionDocuments(req.params.id);
+        // Verify ownership for bands
+        if (!isAdmin) {
+            const band = await getBandByUserId(req.session.user.id);
+            if (!band || transaction.band_id !== band.id) {
+                req.session.error = 'Access denied';
+                return res.redirect('/transactions');
+            }
+        }
 
-        res.render('transaction-documents', { band, transaction, documents });
+        if (transaction.drive_folder_id) {
+            req.session.error = 'Folder already exists';
+            return res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
+        }
+
+        const band = await getBandById(transaction.band_id);
+        if (!band) {
+            req.session.error = 'Associated band not found';
+            return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
+        }
+        const authenticatedClient = await googleAuth.getAuthenticatedClient();
+        const transactionsFolderId = await getTransactionsFolderId(authenticatedClient, band.folder_id);
+        const folderId = await createTransactionFolder(
+            authenticatedClient,
+            transactionsFolderId,
+            transaction.id,
+            transaction.description
+        );
+
+        await updateTransaction(req.params.id, { drive_folder_id: folderId });
+
+        // Sync to Google Sheets to update Documents column
+        const transactions = await getTransactionsByBand(transaction.band_id);
+        await syncTransactionsToSheet(authenticatedClient, band.accounting_spreadsheet_id, transactions);
+
+        req.session.success = 'Documents folder created successfully';
+        res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
     } catch (error) {
-        console.error('Error loading documents:', error);
-        res.status(500).send('Failed to load documents');
+        console.error('Error creating folder:', error);
+        req.session.error = 'Failed to create documents folder';
+        const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
+        res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
     }
-});
+}
 
-app.post('/transactions/:id/documents', requireBand, upload.single('document'), async (req, res) => {
+app.post('/transactions/:id/create-folder', requireBand, handleCreateFolder);
+app.post('/admin/transactions/:id/create-folder', requireAdmin, handleCreateFolder);
+
+// Shared handler for upload documents (both bands and admins)
+async function handleUploadDocuments(req, res) {
     try {
-        const band = await getBandByUserId(req.session.user.id);
-        if (!band) {
-            return res.status(404).send('Band not found');
-        }
-
+        const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
         const transaction = await getTransactionById(req.params.id);
-        if (!transaction || transaction.band_id !== band.id) {
-            return res.status(404).send('Transaction not found');
+
+        if (!transaction) {
+            req.session.error = 'Transaction not found';
+            return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
         }
 
-        if (!req.file) {
-            return res.redirect('/transactions/' + req.params.id + '/documents?error=' + encodeURIComponent('No file uploaded'));
+        // Verify ownership for bands
+        if (!isAdmin) {
+            const band = await getBandByUserId(req.session.user.id);
+            if (!band || transaction.band_id !== band.id) {
+                req.session.error = 'Access denied';
+                return res.redirect('/transactions');
+            }
         }
 
+        if (!req.files || req.files.length === 0) {
+            req.session.error = 'No files selected';
+            return res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
+        }
+
+        const band = await getBandById(transaction.band_id);
+        if (!band) {
+            req.session.error = 'Associated band not found';
+            return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
+        }
         const authenticatedClient = await googleAuth.getAuthenticatedClient();
 
         // Create folder if it doesn't exist
@@ -893,38 +1023,55 @@ app.post('/transactions/:id/documents', requireBand, upload.single('document'), 
             await updateTransaction(transaction.id, { drive_folder_id: folderId });
         }
 
-        // Upload file
-        const driveFileId = await uploadTransactionDocument(authenticatedClient, folderId, req.file.buffer, req.file.originalname);
-        await addTransactionDocument(transaction.id, driveFileId, req.file.originalname);
+        // Upload each file
+        for (const file of req.files) {
+            const driveFileId = await uploadTransactionDocument(authenticatedClient, folderId, file.buffer, file.originalname);
+            await addTransactionDocument(transaction.id, driveFileId, file.originalname);
+        }
 
         // Sync to Google Sheets (to update Documents column)
-        const transactions = await getTransactionsByBand(band.id);
+        const transactions = await getTransactionsByBand(transaction.band_id);
         await syncTransactionsToSheet(authenticatedClient, band.accounting_spreadsheet_id, transactions);
 
-        res.redirect('/transactions/' + req.params.id + '/documents?success=' + encodeURIComponent('Document uploaded successfully'));
+        req.session.success = `${req.files.length} document(s) uploaded successfully`;
+        res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
     } catch (error) {
-        console.error('Error uploading document:', error);
-        res.redirect('/transactions/' + req.params.id + '/documents?error=' + encodeURIComponent('Failed to upload document'));
+        console.error('Error uploading documents:', error);
+        req.session.error = 'Failed to upload documents';
+        const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
+        res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
     }
-});
+}
 
-app.post('/transactions/:transactionId/documents/:docId/delete', requireBand, async (req, res) => {
+app.post('/transactions/:id/documents', requireBand, upload.array('documents', 10), handleUploadDocuments);
+app.post('/admin/transactions/:id/documents', requireAdmin, upload.array('documents', 10), handleUploadDocuments);
+
+// Shared handler for delete document (both bands and admins)
+async function handleDeleteDocument(req, res) {
     try {
-        const band = await getBandByUserId(req.session.user.id);
-        if (!band) {
-            return res.status(404).send('Band not found');
+        const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
+        const transaction = await getTransactionById(req.params.id);
+
+        if (!transaction) {
+            req.session.error = 'Transaction not found';
+            return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
         }
 
-        const transaction = await getTransactionById(req.params.transactionId);
-        if (!transaction || transaction.band_id !== band.id) {
-            return res.status(404).send('Transaction not found');
+        // Verify ownership for bands
+        if (!isAdmin) {
+            const band = await getBandByUserId(req.session.user.id);
+            if (!band || transaction.band_id !== band.id) {
+                req.session.error = 'Access denied';
+                return res.redirect('/transactions');
+            }
         }
 
-        const documents = await getTransactionDocuments(req.params.transactionId);
+        const documents = await getTransactionDocuments(req.params.id);
         const document = documents.find(d => d.id === parseInt(req.params.docId));
 
         if (!document) {
-            return res.status(404).send('Document not found');
+            req.session.error = 'Document not found';
+            return res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
         }
 
         // Delete from Drive
@@ -934,12 +1081,18 @@ app.post('/transactions/:transactionId/documents/:docId/delete', requireBand, as
         // Delete from DB
         await deleteTransactionDocument(req.params.docId);
 
-        res.redirect('/transactions/' + req.params.transactionId + '/documents?success=' + encodeURIComponent('Document deleted successfully'));
+        req.session.success = 'Document deleted successfully';
+        res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
     } catch (error) {
         console.error('Error deleting document:', error);
-        res.redirect('/transactions/' + req.params.transactionId + '/documents?error=' + encodeURIComponent('Failed to delete document'));
+        req.session.error = 'Failed to delete document';
+        const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
+        res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
     }
-});
+}
+
+app.post('/transactions/:id/documents/:docId/delete', requireBand, handleDeleteDocument);
+app.post('/admin/transactions/:id/documents/:docId/delete', requireAdmin, handleDeleteDocument);
 
 // Admin transaction routes
 app.get('/admin/transactions', requireAdmin, async (req, res) => {
@@ -988,6 +1141,9 @@ app.post('/admin/transactions/:id/validate', requireAdmin, async (req, res) => {
 
         // Sync to Google Sheets
         const band = await getBandById(transaction.band_id);
+        if (!band) {
+            return res.redirect('/admin/transactions?error=' + encodeURIComponent('Associated band not found'));
+        }
         const transactions = await getTransactionsByBand(transaction.band_id);
         const authenticatedClient = await googleAuth.getAuthenticatedClient();
         await syncTransactionsToSheet(authenticatedClient, band.accounting_spreadsheet_id, transactions);
@@ -1017,6 +1173,9 @@ app.post('/admin/transactions/:id/delete', requireAdmin, async (req, res) => {
 
         // Sync to Google Sheets
         const band = await getBandById(transaction.band_id);
+        if (!band) {
+            return res.redirect('/admin/transactions?error=' + encodeURIComponent('Associated band not found'));
+        }
         const transactions = await getTransactionsByBand(transaction.band_id);
         const authenticatedClient = await googleAuth.getAuthenticatedClient();
         await syncTransactionsToSheet(authenticatedClient, band.accounting_spreadsheet_id, transactions);

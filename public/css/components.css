@@ -227,3 +227,13 @@
     letter-spacing: var(--spacing-letter);
     font-weight: normal;
 }
+
+/* Clickable Table Rows */
+.data-table tbody tr.clickable-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.data-table tbody tr.clickable-row:hover {
+    background-color: var(--color-accent);
+}

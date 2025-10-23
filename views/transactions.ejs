@@ -55,12 +55,7 @@
                 <%- include('partials/transaction-table', {
                     transactions,
                     showBandColumn: false,
-                    canEdit: (t) => t.status === 'pending',
-                    canValidate: false,
-                    canDelete: (t) => t.status === 'pending',
-                    editUrlPrefix: '/transactions',
-                    validateUrlPrefix: '',
-                    deleteUrlPrefix: '/transactions'
+                    detailUrlPrefix: '/transactions'
                 }) %>
             </div>
         </div>

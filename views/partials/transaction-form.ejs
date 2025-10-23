@@ -1,4 +1,20 @@
-<form id="transaction-form" action="<%= formAction %>" method="POST" enctype="multipart/form-data">
+<form id="transaction-form" action="<%= formAction %>" method="POST"<% if (!transaction) { %> enctype="multipart/form-data"<% } %>>
+    <% if (typeof canEditStatus !== 'undefined' && canEditStatus && transaction) { %>
+        <div class="form-group">
+            <label class="form-label">Status</label>
+            <div style="display: flex; gap: 1rem;">
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="radio" name="status" value="pending" <%= transaction.status === 'pending' ? 'checked' : '' %> required>
+                    Pending
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem;">
+                    <input type="radio" name="status" value="validated" <%= transaction.status === 'validated' ? 'checked' : '' %> required>
+                    Validated
+                </label>
+            </div>
+        </div>
+    <% } %>
+
     <div class="form-group">
         <label class="form-label">Type</label>
         <div style="display: flex; gap: 1rem;">
@@ -43,6 +59,23 @@
         >
     </div>
 
+    <% if (typeof canEditStatus !== 'undefined' && canEditStatus && transaction) { %>
+        <div class="form-group">
+            <label for="transaction_date" class="form-label">Transaction Date</label>
+            <input
+                type="date"
+                id="transaction_date"
+                name="transaction_date"
+                class="form-input"
+                value="<%= transaction.transaction_date ? new Date(transaction.transaction_date).toISOString().split('T')[0] : '' %>"
+            >
+            <label style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem;">
+                <input type="checkbox" id="clear_date" name="clear_date" value="true" onchange="toggleTransactionDate()">
+                Set as null (clear date)
+            </label>
+        </div>
+    <% } %>
+
     <div class="form-group">
         <label for="description" class="form-label">Description</label>
         <textarea
@@ -79,13 +112,25 @@
 </form>
 
 <script>
+function toggleTransactionDate() {
+    const dateInput = document.getElementById('transaction_date');
+    const clearCheckbox = document.getElementById('clear_date');
+
+    if (clearCheckbox.checked) {
+        dateInput.value = '';
+        dateInput.disabled = true;
+    } else {
+        dateInput.disabled = false;
+    }
+}
+
 function filterCategories() {
     const selectedType = document.querySelector('input[name="type"]:checked').value;
     const categorySelect = document.getElementById('category_id');
     const options = categorySelect.querySelectorAll('option');
 
-    // Reset selection
-    categorySelect.value = '';
+    // Save current selection
+    const currentValue = categorySelect.value;
 
     options.forEach(option => {
         if (option.value === '') {
@@ -101,6 +146,17 @@ function filterCategories() {
             option.style.display = 'none';
         }
     });
+
+    // Restore selection if it's still visible
+    if (currentValue) {
+        const selectedOption = categorySelect.querySelector(`option[value="${currentValue}"]`);
+        if (selectedOption && selectedOption.style.display !== 'none') {
+            categorySelect.value = currentValue;
+        } else {
+            // If current selection is now hidden, reset to empty
+            categorySelect.value = '';
+        }
+    }
 }
 
 // Filter on page load

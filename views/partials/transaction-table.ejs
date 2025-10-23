@@ -11,12 +11,11 @@
                 <th>Amount</th>
                 <th>Status</th>
                 <th>Date</th>
-                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
             <% transactions.forEach(transaction => { %>
-                <tr>
+                <tr class="clickable-row" data-transaction-id="<%= transaction.id %>">
                     <% if (showBandColumn) { %>
                         <td><%= transaction.band_name %></td>
                     <% } %>
@@ -47,27 +46,6 @@
                             -
                         <% } %>
                     </td>
-                    <td>
-                        <% if (canEdit(transaction)) { %>
-                            <a href="<%= editUrlPrefix %>/<%= transaction.id %>/edit" class="btn btn-small" style="margin-right: 0.5rem;">Edit</a>
-                        <% } %>
-
-                        <% if (canValidate && transaction.status === 'pending') { %>
-                            <form action="<%= validateUrlPrefix %>/<%= transaction.id %>/validate" method="POST" style="display: inline;" onsubmit="return validateTransaction(event, this)">
-                                <button type="submit" class="btn btn-small" style="margin-right: 0.5rem;">Validate</button>
-                            </form>
-                        <% } %>
-
-                        <% if (transaction.drive_folder_id) { %>
-                            <a href="https://drive.google.com/drive/folders/<%= transaction.drive_folder_id %>" target="_blank" class="btn btn-small" style="margin-right: 0.5rem;">Documents</a>
-                        <% } %>
-
-                        <% if (canDelete(transaction)) { %>
-                            <form action="<%= deleteUrlPrefix %>/<%= transaction.id %>/delete" method="POST" style="display: inline;">
-                                <button type="submit" class="btn btn-small" onclick="return confirm('<%= transaction.status === 'validated' ? 'This transaction is validated. Really delete?' : 'Delete this transaction?' %>')">Delete</button>
-                            </form>
-                        <% } %>
-                    </td>
                 </tr>
             <% }); %>
         </tbody>
@@ -76,43 +54,12 @@
     <p style="text-align: center; padding: 2rem;">No transactions yet.</p>
 <% } %>
 
-<% if (canValidate) { %>
 <script>
-function validateTransaction(event, form) {
-    event.preventDefault();
-
-    const dateInput = prompt('Enter transaction date (YYYY-MM-DD):', new Date().toISOString().split('T')[0]);
-
-    if (!dateInput) {
-        return false;
-    }
-
-    // Validate date format
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(dateInput)) {
-        alert('Invalid date format. Please use YYYY-MM-DD');
-        return false;
-    }
-
-    // Check if date is not in future
-    const selectedDate = new Date(dateInput);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (selectedDate > today) {
-        alert('Transaction date cannot be in the future');
-        return false;
-    }
-
-    // Add hidden input with date
-    const hiddenInput = document.createElement('input');
-    hiddenInput.type = 'hidden';
-    hiddenInput.name = 'transaction_date';
-    hiddenInput.value = dateInput;
-    form.appendChild(hiddenInput);
-
-    form.submit();
-    return true;
-}
+// Make transaction rows clickable
+document.querySelectorAll('.clickable-row').forEach(row => {
+    row.addEventListener('click', function() {
+        const transactionId = this.getAttribute('data-transaction-id');
+        window.location.href = '<%= detailUrlPrefix %>/' + transactionId;
+    });
+});
 </script>
-<% } %>
