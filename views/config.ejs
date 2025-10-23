@@ -31,6 +31,76 @@
                 </div>
                 <button type="submit" class="btn">Save Configuration</button>
             </form>
+
+            <% if (googleConfigured && isGoogleAuthenticated) { %>
+                <div class="info-box" style="margin-top: 2rem;">
+                    <h2 class="section-title">Organization Band</h2>
+                    <% if (organizationBandId) { %>
+                        <p>Organization band has been created.</p>
+                        <% if (organizationBand) { %>
+                            <p><strong>Name:</strong> <%= organizationBand.name %></p>
+                            <% if (organizationBand.folder_id) { %>
+                                <p>
+                                    <a href="https://drive.google.com/drive/folders/<%= organizationBand.folder_id %>" target="_blank">
+                                        View Organization Folder
+                                    </a>
+                                </p>
+                            <% } %>
+                        <% } %>
+                    <% } else { %>
+                        <p>Create a special band for organization-level transactions.</p>
+                        <form action="/config/create-organization" method="POST" style="margin-top: 1rem;">
+                            <button type="submit" class="btn">Create Organization Band</button>
+                        </form>
+                    <% } %>
+                </div>
+
+                <div class="info-box" style="margin-top: 2rem;">
+                    <h2 class="section-title">Transaction Categories</h2>
+
+                    <% if (categories && categories.length > 0) { %>
+                        <table class="data-table" style="margin-bottom: 1.5rem;">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% categories.forEach(category => { %>
+                                    <tr>
+                                        <td><%= category.name %></td>
+                                        <td><%= category.type.charAt(0).toUpperCase() + category.type.slice(1) %></td>
+                                        <td>
+                                            <form action="/config/categories/<%= category.id %>/delete" method="POST" style="display: inline;">
+                                                <button type="submit" class="btn btn-small" onclick="return confirm('Delete this category?')">Delete</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    <% } %>
+
+                    <h3 class="section-title" style="font-size: 1rem; margin-top: 1.5rem;">Add New Category</h3>
+                    <form action="/config/categories" method="POST">
+                        <div class="form-group">
+                            <label for="category_name" class="form-label">Category Name</label>
+                            <input type="text" id="category_name" name="name" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="category_type" class="form-label">Type</label>
+                            <select id="category_type" name="type" class="form-input" required>
+                                <option value="income">Income</option>
+                                <option value="expense">Expense</option>
+                                <option value="both">Both</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn">Add Category</button>
+                    </form>
+                </div>
+            <% } %>
         </div>
     </main>
 

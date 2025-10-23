@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <%- include('partials/head', { title: 'Transaction Documents - Tah Prod' }) %>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <main class="main-content">
+        <div class="form-container">
+            <h1 class="form-title">Transaction Documents</h1>
+            <%- include('partials/messages') %>
+
+            <div class="info-box" style="margin-bottom: 2rem;">
+                <p><strong>Description:</strong> <%= transaction.description %></p>
+                <p><strong>Amount:</strong> €<%= transaction.amount.toFixed(2) %></p>
+                <p><strong>Status:</strong> <%= transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1) %></p>
+            </div>
+
+            <%- include('partials/transaction-documents', {
+                documents,
+                canDelete: transaction.status === 'pending',
+                canUpload: true,
+                uploadUrl: '/transactions/' + transaction.id + '/documents',
+                deleteUrlPrefix: '/transactions/' + transaction.id + '/documents'
+            }) %>
+
+            <div style="margin-top: 1.5rem; text-align: center;">
+                <a href="/transactions" class="btn">Back to Transactions</a>
+            </div>
+        </div>
+    </main>
+
+    <%- include('partials/footer') %>
+</body>
+</html>

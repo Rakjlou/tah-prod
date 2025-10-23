@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <%- include('partials/head', { title: 'Transactions - Tah Prod' }) %>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <main class="main-content">
+        <div class="form-container" style="max-width: 1200px; width: 100%;">
+            <h1 class="form-title">My Transactions</h1>
+            <%- include('partials/messages') %>
+
+            <div class="info-box">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <div>
+                        <p style="font-size: 1.2rem; margin-bottom: 0.5rem;">
+                            <strong>Current Balance:</strong> €<%= balance.toFixed(2) %>
+                        </p>
+                        <% if (pendingCount > 0) { %>
+                            <p style="font-size: 0.9rem; color: var(--color-fg); opacity: 0.8;">
+                                (<%= pendingCount %> pending transaction<%= pendingCount > 1 ? 's' : '' %>)
+                            </p>
+                        <% } %>
+                    </div>
+                    <div>
+                        <a href="/transactions/new" class="btn">Create Transaction</a>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem;">
+                    <a
+                        href="/transactions"
+                        class="btn btn-small <%= !statusFilter ? 'active' : '' %>"
+                        style="<%= !statusFilter ? 'background-color: var(--color-fg); color: var(--color-bg);' : '' %>"
+                    >
+                        All
+                    </a>
+                    <a
+                        href="/transactions?status=pending"
+                        class="btn btn-small <%= statusFilter === 'pending' ? 'active' : '' %>"
+                        style="<%= statusFilter === 'pending' ? 'background-color: var(--color-fg); color: var(--color-bg);' : '' %>"
+                    >
+                        Pending
+                    </a>
+                    <a
+                        href="/transactions?status=validated"
+                        class="btn btn-small <%= statusFilter === 'validated' ? 'active' : '' %>"
+                        style="<%= statusFilter === 'validated' ? 'background-color: var(--color-fg); color: var(--color-bg);' : '' %>"
+                    >
+                        Validated
+                    </a>
+                </div>
+
+                <%- include('partials/transaction-table', {
+                    transactions,
+                    showBandColumn: false,
+                    canEdit: (t) => t.status === 'pending',
+                    canValidate: false,
+                    canDelete: (t) => t.status === 'pending',
+                    editUrlPrefix: '/transactions',
+                    validateUrlPrefix: '',
+                    deleteUrlPrefix: '/transactions'
+                }) %>
+            </div>
+        </div>
+    </main>
+
+    <%- include('partials/footer') %>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <%- include('partials/head', { title: 'New Transaction - Tah Prod' }) %>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <main class="main-content">
+        <div class="form-container">
+            <h1 class="form-title">New Transaction</h1>
+            <%- include('partials/messages') %>
+
+            <%- include('partials/transaction-form', {
+                transaction: null,
+                categories,
+                formAction: '/transactions'
+            }) %>
+
+            <div style="margin-top: 1.5rem; text-align: center;">
+                <a href="/transactions" style="color: var(--color-fg); text-decoration: underline;">Cancel</a>
+            </div>
+        </div>
+    </main>
+
+    <%- include('partials/footer') %>
+</body>
+</html>

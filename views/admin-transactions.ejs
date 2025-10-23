@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <%- include('partials/head', { title: 'All Transactions - Tah Prod' }) %>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <main class="main-content">
+        <div class="form-container" style="max-width: 1400px; width: 100%;">
+            <h1 class="form-title">All Transactions</h1>
+            <%- include('partials/messages') %>
+
+            <div class="info-box">
+                <div style="margin-bottom: 1.5rem;">
+                    <form method="GET" action="/admin/transactions" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+                        <div class="form-group" style="margin-bottom: 0; min-width: 200px;">
+                            <label for="band" class="form-label">Filter by Band</label>
+                            <select id="band" name="band" class="form-input" onchange="this.form.submit()">
+                                <option value="">All Bands</option>
+                                <% if (organizationBandId) { %>
+                                    <option value="<%= organizationBandId %>" <%= bandFilter === organizationBandId ? 'selected' : '' %>>
+                                        Organization
+                                    </option>
+                                <% } %>
+                                <% bands.forEach(band => { %>
+                                    <% if (band.id !== organizationBandId) { %>
+                                        <option value="<%= band.id %>" <%= bandFilter === band.id ? 'selected' : '' %>>
+                                            <%= band.name %>
+                                        </option>
+                                    <% } %>
+                                <% }); %>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0; min-width: 150px;">
+                            <label for="status" class="form-label">Filter by Status</label>
+                            <select id="status" name="status" class="form-input" onchange="this.form.submit()">
+                                <option value="">All Statuses</option>
+                                <option value="pending" <%= statusFilter === 'pending' ? 'selected' : '' %>>Pending</option>
+                                <option value="validated" <%= statusFilter === 'validated' ? 'selected' : '' %>>Validated</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-small">Apply Filters</button>
+                        <% if (bandFilter || statusFilter) { %>
+                            <a href="/admin/transactions" class="btn btn-small">Clear Filters</a>
+                        <% } %>
+                    </form>
+                </div>
+
+                <%- include('partials/transaction-table', {
+                    transactions,
+                    showBandColumn: true,
+                    canEdit: (t) => false,
+                    canValidate: true,
+                    canDelete: (t) => true,
+                    editUrlPrefix: '',
+                    validateUrlPrefix: '/admin/transactions',
+                    deleteUrlPrefix: '/admin/transactions'
+                }) %>
+            </div>
+        </div>
+    </main>
+
+    <%- include('partials/footer') %>
+</body>
+</html>

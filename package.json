@@ -20,6 +20,7 @@
         "google-auth-library": "^10.4.1",
         "google-spreadsheet": "^5.0.2",
         "googleapis": "^164.0.0",
+        "multer": "^1.4.5-lts.1",
         "sqlite3": "^5.1.7"
     }
 }

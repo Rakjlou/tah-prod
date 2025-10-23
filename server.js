@@ -2,13 +2,17 @@ const express = require('express');
 const session = require('express-session');
 const SQLiteStore = require('connect-sqlite3')(session);
 const path = require('path');
-const { createUser, getUserByUsername, getUserById, updateUserPassword, getAllConfig, getAllBands, createBand, getBandById, getBandByUserId } = require('./lib/db');
+const { createUser, getUserByUsername, getUserById, updateUserPassword, getAllConfig, getAllBands, createBand, getBandById, getBandByUserId, getAllCategories, createCategory, deleteCategory, seedDefaultCategories, createTransaction, getTransactionById, getTransactionsByBand, getAllTransactionsWithBands, updateTransaction, deleteTransaction, validateTransaction, getBalanceForBand, addTransactionDocument, getTransactionDocuments, deleteTransactionDocument } = require('./lib/db');
 const { verifyPassword, hashPassword } = require('./lib/auth');
 const { ROLES, hasRole } = require('./lib/roles');
-const { createBandStructure } = require('./lib/google-drive');
-const { getOAuthClient, getAuthUrl, getTokensFromCode, getAuthenticatedClient } = require('./lib/google-oauth');
+const { createBandStructure, getTransactionsFolderId, createTransactionFolder, uploadTransactionDocument, deleteTransactionFolder, deleteFile } = require('./lib/google-drive');
+const { getOAuthClient, getAuthUrl, getTokensFromCode } = require('./lib/google-oauth');
+const googleAuth = require('./lib/google-auth');
 const { sendBandWelcomeEmail, sendPasswordResetEmail } = require('./lib/email');
 const configService = require('./lib/config-service');
+const { syncTransactionsToSheet } = require('./lib/google-sheets');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,7 +40,7 @@ app.use(session({
 
 app.use(async (req, res, next) => {
     res.locals.user = req.session.user || null;
-    res.locals.isGoogleAuthenticated = !!(req.session.googleTokens);
+    res.locals.isGoogleAuthenticated = await googleAuth.isAuthenticated();
     res.locals.ROLES = ROLES;
     res.locals.hasRole = (role) => {
         return req.session.user ? hasRole(req.session.user.role, role) : false;
@@ -44,8 +48,8 @@ app.use(async (req, res, next) => {
 
     // Check if Google is configured
     try {
-        const googleAuth = await configService.getGoogleOAuth();
-        res.locals.googleConfigured = !!googleAuth;
+        const googleOAuthConfig = await configService.getGoogleOAuth();
+        res.locals.googleConfigured = !!googleOAuthConfig;
     } catch (error) {
         res.locals.googleConfigured = false;
     }
@@ -155,11 +159,23 @@ app.get('/logout', (req, res) => {
 
 app.get('/config', requireAdmin, async (req, res) => {
     try {
+        // Seed default categories if none exist
+        await seedDefaultCategories();
+
         const config = await getAllConfig();
-        res.render('config', { config });
+        const organizationBandId = await configService.getOrganizationBandId();
+        let organizationBand = null;
+
+        if (organizationBandId) {
+            organizationBand = await getBandById(organizationBandId);
+        }
+
+        const categories = await getAllCategories();
+
+        res.render('config', { config, organizationBandId, organizationBand, categories });
     } catch (error) {
         console.error('Error loading config panel:', error);
-        res.render('config', { error: 'Failed to load configuration', config: {} });
+        res.render('config', { error: 'Failed to load configuration', config: {}, organizationBandId: null, organizationBand: null, categories: [] });
     }
 });
 
@@ -170,11 +186,161 @@ app.post('/config', requireAdmin, async (req, res) => {
         }
 
         const config = await getAllConfig();
-        res.render('config', { success: 'Configuration saved successfully', config });
+        const organizationBandId = await configService.getOrganizationBandId();
+        let organizationBand = null;
+
+        if (organizationBandId) {
+            organizationBand = await getBandById(organizationBandId);
+        }
+
+        const categories = await getAllCategories();
+
+        res.render('config', { success: 'Configuration saved successfully', config, organizationBandId, organizationBand, categories });
     } catch (error) {
         console.error('Error saving configuration:', error);
         const config = await getAllConfig();
-        res.render('config', { error: 'Failed to save configuration', config });
+        res.render('config', { error: 'Failed to save configuration', config, organizationBandId: null, organizationBand: null, categories: [] });
+    }
+});
+
+app.post('/config/create-organization', requireAdmin, async (req, res) => {
+    try {
+        // Check if org already exists
+        const existingOrgId = await configService.getOrganizationBandId();
+        if (existingOrgId) {
+            const config = await getAllConfig();
+            const organizationBand = await getBandById(existingOrgId);
+            return res.render('config', {
+                error: 'Organization band already exists',
+                config,
+                organizationBandId: existingOrgId,
+                organizationBand
+            });
+        }
+
+        // Create organization band structure
+        const parentFolderId = await configService.getGoogleDriveFolderId();
+        const authenticatedClient = await googleAuth.getAuthenticatedClient();
+
+        const { folderId, accountingSpreadsheetId, invoicesFolderId } = await createBandStructure(
+            authenticatedClient,
+            'Organization',
+            null,
+            parentFolderId
+        );
+
+        // Create user account for organization (no login needed, but keeps schema consistent)
+        const temporaryPassword = generateRandomPassword();
+        const hashedPassword = await hashPassword(temporaryPassword);
+        const userId = await createUser('organization@internal', hashedPassword, ROLES.BAND);
+
+        // Create band record
+        const bandId = await createBand('Organization', 'organization@internal', userId, folderId, accountingSpreadsheetId, invoicesFolderId);
+
+        // Store organization band ID in config
+        await configService.setOrganizationBandId(bandId);
+
+        const config = await getAllConfig();
+        const organizationBand = await getBandById(bandId);
+        const categories = await getAllCategories();
+
+        res.render('config', {
+            success: 'Organization band created successfully',
+            config,
+            organizationBandId: bandId,
+            organizationBand,
+            categories
+        });
+    } catch (error) {
+        console.error('Error creating organization band:', error);
+        const config = await getAllConfig();
+        res.render('config', {
+            error: 'Failed to create organization band: ' + error.message,
+            config,
+            organizationBandId: null,
+            organizationBand: null,
+            categories: []
+        });
+    }
+});
+
+app.post('/config/categories', requireAdmin, async (req, res) => {
+    try {
+        const { name, type } = req.body;
+
+        if (!name || !type) {
+            const config = await getAllConfig();
+            const organizationBandId = await configService.getOrganizationBandId();
+            const organizationBand = organizationBandId ? await getBandById(organizationBandId) : null;
+            const categories = await getAllCategories();
+
+            return res.render('config', {
+                error: 'Category name and type are required',
+                config,
+                organizationBandId,
+                organizationBand,
+                categories
+            });
+        }
+
+        await createCategory(name, type);
+
+        const config = await getAllConfig();
+        const organizationBandId = await configService.getOrganizationBandId();
+        const organizationBand = organizationBandId ? await getBandById(organizationBandId) : null;
+        const categories = await getAllCategories();
+
+        res.render('config', {
+            success: `Category "${name}" created successfully`,
+            config,
+            organizationBandId,
+            organizationBand,
+            categories
+        });
+    } catch (error) {
+        console.error('Error creating category:', error);
+        const config = await getAllConfig();
+        const categories = await getAllCategories();
+
+        res.render('config', {
+            error: 'Failed to create category: ' + error.message,
+            config,
+            organizationBandId: null,
+            organizationBand: null,
+            categories
+        });
+    }
+});
+
+app.post('/config/categories/:id/delete', requireAdmin, async (req, res) => {
+    try {
+        const categoryId = req.params.id;
+        await deleteCategory(categoryId);
+
+        const config = await getAllConfig();
+        const organizationBandId = await configService.getOrganizationBandId();
+        const organizationBand = organizationBandId ? await getBandById(organizationBandId) : null;
+        const categories = await getAllCategories();
+
+        res.render('config', {
+            success: 'Category deleted successfully',
+            config,
+            organizationBandId,
+            organizationBand,
+            categories
+        });
+    } catch (error) {
+        console.error('Error deleting category:', error);
+        const config = await getAllConfig();
+        const categories = await getAllCategories();
+
+        res.render('config', {
+            error: 'Failed to delete category: ' + error.message,
+            config,
+            organizationBandId: null,
+            organizationBand: null,
+            categories
+        });
     }
 });
 
@@ -207,15 +373,20 @@ app.get('/auth/google/callback', requireAdmin, async (req, res) => {
     }
 
     try {
-        const googleAuth = await configService.getGoogleOAuth();
+        const googleOAuthConfig = await configService.getGoogleOAuth();
 
-        if (!googleAuth) {
+        if (!googleOAuthConfig) {
             return res.redirect('/bands?error=' + encodeURIComponent('Google OAuth not configured'));
         }
 
-        const oauthClient = getOAuthClient(googleAuth);
+        const oauthClient = getOAuthClient(googleOAuthConfig);
         const tokens = await getTokensFromCode(code, oauthClient);
-        req.session.googleTokens = tokens;
+
+        // Store refresh token permanently (encrypted)
+        if (tokens.refresh_token) {
+            await googleAuth.storeRefreshToken(tokens.refresh_token);
+        }
+
         res.redirect('/bands?success=' + encodeURIComponent('Google authentication successful'));
     } catch (error) {
         console.error('OAuth callback error:', error);
@@ -235,7 +406,7 @@ app.get('/bands', requireAdmin, async (req, res) => {
 
 app.post('/bands', requireAdmin, async (req, res) => {
     // Check if Google authenticated
-    if (!req.session.googleTokens) {
+    if (!await googleAuth.isAuthenticated()) {
         const bands = await getAllBands();
         return res.render('bands', {
             error: 'Please authenticate with Google first',
@@ -251,13 +422,6 @@ app.post('/bands', requireAdmin, async (req, res) => {
             return res.render('bands', { error: 'Name and email are required', bands });
         }
 
-        const googleAuth = await configService.getGoogleOAuth();
-
-        if (!googleAuth) {
-            const bands = await getAllBands();
-            return res.render('bands', { error: 'Google OAuth not configured', bands });
-        }
-
         const parentFolderId = await configService.getGoogleDriveFolderId();
 
         if (!parentFolderId) {
@@ -265,8 +429,7 @@ app.post('/bands', requireAdmin, async (req, res) => {
             return res.render('bands', { error: 'Google Drive folder not configured', bands });
         }
 
-        const oauthClient = getOAuthClient(googleAuth);
-        const authenticatedClient = getAuthenticatedClient(req.session.googleTokens, oauthClient);
+        const authenticatedClient = await googleAuth.getAuthenticatedClient();
 
         const { folderId, accountingSpreadsheetId, invoicesFolderId } = await createBandStructure(
             authenticatedClient,
@@ -388,6 +551,370 @@ app.post('/admin/bands/:id/reset-password', requireAdmin, async (req, res) => {
             error: 'Failed to reset password: ' + error.message,
             bands
         });
+    }
+});
+
+// Band transaction routes
+app.get('/transactions', requireBand, async (req, res) => {
+    try {
+        const band = await getBandByUserId(req.session.user.id);
+        if (!band) {
+            return res.status(404).send('Band not found');
+        }
+
+        const statusFilter = req.query.status || null;
+        const transactions = await getTransactionsByBand(band.id, statusFilter);
+        const balance = await getBalanceForBand(band.id);
+        const pendingCount = await getTransactionsByBand(band.id, 'pending');
+
+        res.render('transactions', {
+            band,
+            transactions,
+            balance,
+            pendingCount: pendingCount.length,
+            statusFilter
+        });
+    } catch (error) {
+        console.error('Error loading transactions:', error);
+        res.render('transactions', {
+            error: 'Failed to load transactions',
+            transactions: [],
+            balance: 0,
+            pendingCount: 0,
+            statusFilter: null
+        });
+    }
+});
+
+app.get('/transactions/new', requireBand, async (req, res) => {
+    try {
+        const band = await getBandByUserId(req.session.user.id);
+        if (!band) {
+            return res.status(404).send('Band not found');
+        }
+
+        const categories = await getAllCategories();
+        res.render('transaction-new', { band, categories });
+    } catch (error) {
+        console.error('Error loading new transaction form:', error);
+        res.status(500).send('Failed to load form');
+    }
+});
+
+app.post('/transactions', requireBand, upload.array('documents', 10), async (req, res) => {
+    try {
+        const band = await getBandByUserId(req.session.user.id);
+        if (!band) {
+            return res.status(404).send('Band not found');
+        }
+
+        const { type, amount, category_id, description } = req.body;
+
+        // Create transaction
+        const transactionId = await createTransaction(band.id, type, parseFloat(amount), parseInt(category_id), description);
+
+        // Handle document uploads if any
+        if (req.files && req.files.length > 0) {
+            const authenticatedClient = await googleAuth.getAuthenticatedClient();
+            const transactionsFolderId = await getTransactionsFolderId(authenticatedClient, band.folder_id);
+            const folderId = await createTransactionFolder(authenticatedClient, transactionsFolderId, transactionId, description);
+
+            // Upload each file
+            for (const file of req.files) {
+                const driveFileId = await uploadTransactionDocument(authenticatedClient, folderId, file.buffer, file.originalname);
+                await addTransactionDocument(transactionId, driveFileId, file.originalname);
+            }
+
+            // Update transaction with folder ID
+            await updateTransaction(transactionId, { drive_folder_id: folderId });
+        }
+
+        // Sync to Google Sheets
+        const transactions = await getTransactionsByBand(band.id);
+        const authenticatedClient = await googleAuth.getAuthenticatedClient();
+        await syncTransactionsToSheet(authenticatedClient, band.accounting_spreadsheet_id, transactions);
+
+        res.redirect('/transactions?success=' + encodeURIComponent('Transaction created successfully'));
+    } catch (error) {
+        console.error('Error creating transaction:', error);
+        res.redirect('/transactions/new?error=' + encodeURIComponent('Failed to create transaction: ' + error.message));
+    }
+});
+
+app.get('/transactions/:id/edit', requireBand, async (req, res) => {
+    try {
+        const band = await getBandByUserId(req.session.user.id);
+        if (!band) {
+            return res.status(404).send('Band not found');
+        }
+
+        const transaction = await getTransactionById(req.params.id);
+        if (!transaction || transaction.band_id !== band.id) {
+            return res.status(404).send('Transaction not found');
+        }
+
+        if (transaction.status !== 'pending') {
+            return res.redirect('/transactions?error=' + encodeURIComponent('Cannot edit validated transaction'));
+        }
+
+        const categories = await getAllCategories();
+        res.render('transaction-edit', { band, transaction, categories });
+    } catch (error) {
+        console.error('Error loading transaction edit form:', error);
+        res.status(500).send('Failed to load form');
+    }
+});
+
+app.post('/transactions/:id', requireBand, async (req, res) => {
+    try {
+        const band = await getBandByUserId(req.session.user.id);
+        if (!band) {
+            return res.status(404).send('Band not found');
+        }
+
+        const transaction = await getTransactionById(req.params.id);
+        if (!transaction || transaction.band_id !== band.id) {
+            return res.status(404).send('Transaction not found');
+        }
+
+        if (transaction.status !== 'pending') {
+            return res.redirect('/transactions?error=' + encodeURIComponent('Cannot edit validated transaction'));
+        }
+
+        const { amount, category_id, description } = req.body;
+        await updateTransaction(req.params.id, {
+            amount: parseFloat(amount),
+            category_id: parseInt(category_id),
+            description
+        });
+
+        // Sync to Google Sheets
+        const transactions = await getTransactionsByBand(band.id);
+        const authenticatedClient = await googleAuth.getAuthenticatedClient();
+        await syncTransactionsToSheet(authenticatedClient, band.accounting_spreadsheet_id, transactions);
+
+        res.redirect('/transactions?success=' + encodeURIComponent('Transaction updated successfully'));
+    } catch (error) {
+        console.error('Error updating transaction:', error);
+        res.redirect('/transactions/' + req.params.id + '/edit?error=' + encodeURIComponent('Failed to update transaction'));
+    }
+});
+
+app.post('/transactions/:id/delete', requireBand, async (req, res) => {
+    try {
+        const band = await getBandByUserId(req.session.user.id);
+        if (!band) {
+            return res.status(404).send('Band not found');
+        }
+
+        const transaction = await getTransactionById(req.params.id);
+        if (!transaction || transaction.band_id !== band.id) {
+            return res.status(404).send('Transaction not found');
+        }
+
+        if (transaction.status !== 'pending') {
+            return res.redirect('/transactions?error=' + encodeURIComponent('Cannot delete validated transaction'));
+        }
+
+        // Delete folder from Drive if exists
+        if (transaction.drive_folder_id) {
+            const authenticatedClient = await googleAuth.getAuthenticatedClient();
+            await deleteTransactionFolder(authenticatedClient, transaction.drive_folder_id);
+        }
+
+        await deleteTransaction(req.params.id);
+
+        // Sync to Google Sheets
+        const transactions = await getTransactionsByBand(band.id);
+        const authenticatedClient = await googleAuth.getAuthenticatedClient();
+        await syncTransactionsToSheet(authenticatedClient, band.accounting_spreadsheet_id, transactions);
+
+        res.redirect('/transactions?success=' + encodeURIComponent('Transaction deleted successfully'));
+    } catch (error) {
+        console.error('Error deleting transaction:', error);
+        res.redirect('/transactions?error=' + encodeURIComponent('Failed to delete transaction'));
+    }
+});
+
+app.get('/transactions/:id/documents', requireBand, async (req, res) => {
+    try {
+        const band = await getBandByUserId(req.session.user.id);
+        if (!band) {
+            return res.status(404).send('Band not found');
+        }
+
+        const transaction = await getTransactionById(req.params.id);
+        if (!transaction || transaction.band_id !== band.id) {
+            return res.status(404).send('Transaction not found');
+        }
+
+        const documents = await getTransactionDocuments(req.params.id);
+
+        res.render('transaction-documents', { band, transaction, documents });
+    } catch (error) {
+        console.error('Error loading documents:', error);
+        res.status(500).send('Failed to load documents');
+    }
+});
+
+app.post('/transactions/:id/documents', requireBand, upload.single('document'), async (req, res) => {
+    try {
+        const band = await getBandByUserId(req.session.user.id);
+        if (!band) {
+            return res.status(404).send('Band not found');
+        }
+
+        const transaction = await getTransactionById(req.params.id);
+        if (!transaction || transaction.band_id !== band.id) {
+            return res.status(404).send('Transaction not found');
+        }
+
+        if (!req.file) {
+            return res.redirect('/transactions/' + req.params.id + '/documents?error=' + encodeURIComponent('No file uploaded'));
+        }
+
+        const authenticatedClient = await googleAuth.getAuthenticatedClient();
+
+        // Create folder if it doesn't exist
+        let folderId = transaction.drive_folder_id;
+        if (!folderId) {
+            const transactionsFolderId = await getTransactionsFolderId(authenticatedClient, band.folder_id);
+            folderId = await createTransactionFolder(authenticatedClient, transactionsFolderId, transaction.id, transaction.description);
+            await updateTransaction(transaction.id, { drive_folder_id: folderId });
+        }
+
+        // Upload file
+        const driveFileId = await uploadTransactionDocument(authenticatedClient, folderId, req.file.buffer, req.file.originalname);
+        await addTransactionDocument(transaction.id, driveFileId, req.file.originalname);
+
+        // Sync to Google Sheets (to update Documents column)
+        const transactions = await getTransactionsByBand(band.id);
+        await syncTransactionsToSheet(authenticatedClient, band.accounting_spreadsheet_id, transactions);
+
+        res.redirect('/transactions/' + req.params.id + '/documents?success=' + encodeURIComponent('Document uploaded successfully'));
+    } catch (error) {
+        console.error('Error uploading document:', error);
+        res.redirect('/transactions/' + req.params.id + '/documents?error=' + encodeURIComponent('Failed to upload document'));
+    }
+});
+
+app.post('/transactions/:transactionId/documents/:docId/delete', requireBand, async (req, res) => {
+    try {
+        const band = await getBandByUserId(req.session.user.id);
+        if (!band) {
+            return res.status(404).send('Band not found');
+        }
+
+        const transaction = await getTransactionById(req.params.transactionId);
+        if (!transaction || transaction.band_id !== band.id) {
+            return res.status(404).send('Transaction not found');
+        }
+
+        const documents = await getTransactionDocuments(req.params.transactionId);
+        const document = documents.find(d => d.id === parseInt(req.params.docId));
+
+        if (!document) {
+            return res.status(404).send('Document not found');
+        }
+
+        // Delete from Drive
+        const authenticatedClient = await googleAuth.getAuthenticatedClient();
+        await deleteFile(authenticatedClient, document.drive_file_id);
+
+        // Delete from DB
+        await deleteTransactionDocument(req.params.docId);
+
+        res.redirect('/transactions/' + req.params.transactionId + '/documents?success=' + encodeURIComponent('Document deleted successfully'));
+    } catch (error) {
+        console.error('Error deleting document:', error);
+        res.redirect('/transactions/' + req.params.transactionId + '/documents?error=' + encodeURIComponent('Failed to delete document'));
+    }
+});
+
+// Admin transaction routes
+app.get('/admin/transactions', requireAdmin, async (req, res) => {
+    try {
+        const bandFilter = req.query.band ? parseInt(req.query.band) : null;
+        const statusFilter = req.query.status || null;
+
+        const transactions = await getAllTransactionsWithBands(bandFilter, statusFilter);
+        const bands = await getAllBands();
+        const organizationBandId = await configService.getOrganizationBandId();
+
+        res.render('admin-transactions', {
+            transactions,
+            bands,
+            organizationBandId,
+            bandFilter,
+            statusFilter
+        });
+    } catch (error) {
+        console.error('Error loading admin transactions:', error);
+        res.render('admin-transactions', {
+            error: 'Failed to load transactions',
+            transactions: [],
+            bands: [],
+            organizationBandId: null,
+            bandFilter: null,
+            statusFilter: null
+        });
+    }
+});
+
+app.post('/admin/transactions/:id/validate', requireAdmin, async (req, res) => {
+    try {
+        const { transaction_date } = req.body;
+        const transaction = await getTransactionById(req.params.id);
+
+        if (!transaction) {
+            return res.redirect('/admin/transactions?error=' + encodeURIComponent('Transaction not found'));
+        }
+
+        if (transaction.status === 'validated') {
+            return res.redirect('/admin/transactions?error=' + encodeURIComponent('Transaction already validated'));
+        }
+
+        await validateTransaction(req.params.id, req.session.user.id, transaction_date);
+
+        // Sync to Google Sheets
+        const band = await getBandById(transaction.band_id);
+        const transactions = await getTransactionsByBand(transaction.band_id);
+        const authenticatedClient = await googleAuth.getAuthenticatedClient();
+        await syncTransactionsToSheet(authenticatedClient, band.accounting_spreadsheet_id, transactions);
+
+        res.redirect('/admin/transactions?success=' + encodeURIComponent('Transaction validated successfully'));
+    } catch (error) {
+        console.error('Error validating transaction:', error);
+        res.redirect('/admin/transactions?error=' + encodeURIComponent('Failed to validate transaction'));
+    }
+});
+
+app.post('/admin/transactions/:id/delete', requireAdmin, async (req, res) => {
+    try {
+        const transaction = await getTransactionById(req.params.id);
+
+        if (!transaction) {
+            return res.redirect('/admin/transactions?error=' + encodeURIComponent('Transaction not found'));
+        }
+
+        // Delete folder from Drive if exists
+        if (transaction.drive_folder_id) {
+            const authenticatedClient = await googleAuth.getAuthenticatedClient();
+            await deleteTransactionFolder(authenticatedClient, transaction.drive_folder_id);
+        }
+
+        await deleteTransaction(req.params.id);
+
+        // Sync to Google Sheets
+        const band = await getBandById(transaction.band_id);
+        const transactions = await getTransactionsByBand(transaction.band_id);
+        const authenticatedClient = await googleAuth.getAuthenticatedClient();
+        await syncTransactionsToSheet(authenticatedClient, band.accounting_spreadsheet_id, transactions);
+
+        res.redirect('/admin/transactions?success=' + encodeURIComponent('Transaction deleted successfully'));
+    } catch (error) {
+        console.error('Error deleting transaction:', error);
+        res.redirect('/admin/transactions?error=' + encodeURIComponent('Failed to delete transaction'));
     }
 });
 

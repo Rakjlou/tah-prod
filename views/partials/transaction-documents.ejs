@@ -1,0 +1,57 @@
+<div class="info-box">
+    <h2 class="section-title">Documents</h2>
+
+    <% if (documents && documents.length > 0) { %>
+        <table class="data-table" style="margin-bottom: 1.5rem;">
+            <thead>
+                <tr>
+                    <th>Filename</th>
+                    <th>Uploaded</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% documents.forEach(doc => { %>
+                    <tr>
+                        <td><%= doc.filename %></td>
+                        <td><%= new Date(doc.uploaded_at).toLocaleDateString() %></td>
+                        <td>
+                            <a href="https://drive.google.com/file/d/<%= doc.drive_file_id %>/view" target="_blank" class="btn btn-small" style="margin-right: 0.5rem;">View</a>
+                            <% if (canDelete) { %>
+                                <form action="<%= deleteUrlPrefix %>/<%= doc.id %>/delete" method="POST" style="display: inline;">
+                                    <button type="submit" class="btn btn-small" onclick="return confirm('Delete this document?')">Delete</button>
+                                </form>
+                            <% } %>
+                        </td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    <% } else { %>
+        <p style="margin-bottom: 1.5rem;">No documents attached.</p>
+    <% } %>
+
+    <% if (canUpload) { %>
+        <h3 class="section-title" style="font-size: 1rem; margin-top: 1.5rem;">Upload Document</h3>
+        <form action="<%= uploadUrl %>" method="POST" enctype="multipart/form-data" id="upload-form">
+            <div class="form-group">
+                <input
+                    type="file"
+                    name="document"
+                    class="form-input"
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                    required
+                >
+            </div>
+            <button type="submit" class="btn" id="upload-btn">Upload Document</button>
+        </form>
+
+        <script>
+        document.getElementById('upload-form').addEventListener('submit', function(e) {
+            const uploadBtn = document.getElementById('upload-btn');
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = 'Uploading...';
+        });
+        </script>
+    <% } %>
+</div>
