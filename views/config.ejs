@@ -32,6 +32,17 @@
                 <button type="submit" class="btn">Save Configuration</button>
             </form>
 
+            <% if (googleConfigured && !isGoogleAuthenticated) { %>
+                <div class="info-box" style="margin-top: 2rem;">
+                    <p>
+                        Google OAuth is configured. Authenticate with your Google account to enable Google Drive and Sheets integration.
+                    </p>
+                    <a href="/auth/google" class="btn">
+                        Authenticate with Google
+                    </a>
+                </div>
+            <% } %>
+
             <% if (googleConfigured && isGoogleAuthenticated) { %>
                 <div class="info-box" style="margin-top: 2rem;">
                     <h2 class="section-title">Organization Band</h2>

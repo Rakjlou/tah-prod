@@ -352,6 +352,10 @@ app.get('/auth/google', requireAdmin, async (req, res) => {
             return res.redirect('/bands?error=' + encodeURIComponent('Google OAuth not configured. Please configure it in Config section first.'));
         }
 
+        // Store the referring page to redirect back after authentication
+        const returnTo = req.headers.referer || '/bands';
+        req.session.oauthReturnTo = returnTo;
+
         const oauthClient = getOAuthClient(googleAuth);
         const authUrl = getAuthUrl(oauthClient);
         res.redirect(authUrl);
@@ -364,19 +368,23 @@ app.get('/auth/google', requireAdmin, async (req, res) => {
 app.get('/auth/google/callback', requireAdmin, async (req, res) => {
     const { code, error } = req.query;
 
+    // Get the return URL from session, default to /bands
+    const returnTo = req.session.oauthReturnTo || '/bands';
+    delete req.session.oauthReturnTo;
+
     if (error) {
-        return res.redirect('/bands?error=' + encodeURIComponent('Google authentication cancelled'));
+        return res.redirect(returnTo + '?error=' + encodeURIComponent('Google authentication cancelled'));
     }
 
     if (!code) {
-        return res.redirect('/bands?error=' + encodeURIComponent('No authorization code received'));
+        return res.redirect(returnTo + '?error=' + encodeURIComponent('No authorization code received'));
     }
 
     try {
         const googleOAuthConfig = await configService.getGoogleOAuth();
 
         if (!googleOAuthConfig) {
-            return res.redirect('/bands?error=' + encodeURIComponent('Google OAuth not configured'));
+            return res.redirect(returnTo + '?error=' + encodeURIComponent('Google OAuth not configured'));
         }
 
         const oauthClient = getOAuthClient(googleOAuthConfig);
@@ -387,10 +395,10 @@ app.get('/auth/google/callback', requireAdmin, async (req, res) => {
             await googleAuth.storeRefreshToken(tokens.refresh_token);
         }
 
-        res.redirect('/bands?success=' + encodeURIComponent('Google authentication successful'));
+        res.redirect(returnTo + '?success=' + encodeURIComponent('Google authentication successful'));
     } catch (error) {
         console.error('OAuth callback error:', error);
-        res.redirect('/bands?error=' + encodeURIComponent('Authentication failed: ' + error.message));
+        res.redirect(returnTo + '?error=' + encodeURIComponent('Authentication failed: ' + error.message));
     }
 });
 
