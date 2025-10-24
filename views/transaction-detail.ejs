@@ -50,7 +50,7 @@
                     <h2 class="section-title">Transaction Details</h2>
                     <p><strong>Type:</strong> <%= transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1) %></p>
                     <p><strong>Category:</strong> <%= transaction.category_name %></p>
-                    <p><strong>Amount:</strong> €<%= transaction.amount.toFixed(2) %></p>
+                    <p><strong>Amount:</strong> <%= transaction.type === 'expense' ? '-' : '' %><%= transaction.amount.toFixed(2) %> €</p>
                     <p><strong>Description:</strong></p>
                     <p style="white-space: pre-wrap;"><%= transaction.description %></p>
                 </div>

@@ -6,22 +6,24 @@
                     <% if (showBandColumn) { %>
                         <th>Band</th>
                     <% } %>
-                    <th>Type</th>
+                    <th>Date</th>
                     <th>Category</th>
                     <th>Description</th>
                     <th>Amount</th>
-                    <th>Status</th>
-                    <th>Date</th>
                 </tr>
             </thead>
             <tbody>
                 <% transactions.forEach(transaction => { %>
-                    <tr class="clickable-row" data-transaction-id="<%= transaction.id %>">
+                    <tr class="clickable-row" data-transaction-id="<%= transaction.id %>" style="<%= transaction.status === 'pending' ? 'color: #ffeb3b;' : '' %>">
                         <% if (showBandColumn) { %>
                             <td><%= transaction.band_name %></td>
                         <% } %>
                         <td>
-                            <%= transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1) %>
+                            <% if (transaction.transaction_date) { %>
+                                <%= new Date(transaction.transaction_date).toLocaleDateString() %>
+                            <% } else { %>
+                                -
+                            <% } %>
                         </td>
                         <td><%= transaction.category_name || 'N/A' %></td>
                         <td>
@@ -32,21 +34,7 @@
                                 <%= transaction.description %>
                             <% } %>
                         </td>
-                        <td>€<%= transaction.amount.toFixed(2) %></td>
-                        <td>
-                            <% if (transaction.status === 'pending') { %>
-                                <span style="background-color: #ffeb3b; color: #000; padding: 0.25rem 0.5rem; border: 1px solid #000;">PENDING</span>
-                            <% } else { %>
-                                <span style="background-color: #4caf50; color: #fff; padding: 0.25rem 0.5rem; border: 1px solid #000;">VALIDATED</span>
-                            <% } %>
-                        </td>
-                        <td>
-                            <% if (transaction.transaction_date) { %>
-                                <%= new Date(transaction.transaction_date).toLocaleDateString() %>
-                            <% } else { %>
-                                -
-                            <% } %>
-                        </td>
+                        <td><%= transaction.type === 'expense' ? '-' : '' %><%= transaction.amount.toFixed(2) %> €</td>
                     </tr>
                 <% }); %>
             </tbody>

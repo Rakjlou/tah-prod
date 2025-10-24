@@ -121,17 +121,33 @@ describe('Google Drive & Sheets Integration', () => {
             });
 
             assert.strictEqual(spreadsheetRes.data.properties.title, 'Accounting');
-            assert.ok(spreadsheetRes.data.sheets.length > 0, 'Should have at least one sheet');
-            assert.strictEqual(spreadsheetRes.data.sheets[0].properties.title, 'Transactions');
+            assert.ok(spreadsheetRes.data.sheets.length >= 2, 'Should have at least two sheets (Transactions and Summary)');
 
-            // Verify headers are present
+            // Verify sheet names
+            const sheetTitles = spreadsheetRes.data.sheets.map(s => s.properties.title);
+            assert.ok(sheetTitles.includes('Transactions'), 'Should have Transactions sheet');
+            assert.ok(sheetTitles.includes('Summary'), 'Should have Summary sheet');
+
+            // Verify Transactions sheet headers
             const headersRes = await sheets.spreadsheets.values.get({
                 spreadsheetId: testBandSheetId,
-                range: 'Transactions!A1:G1'
+                range: 'Transactions!A1:F1'
             });
 
-            const expectedHeaders = ['Date', 'Type', 'Category', 'Description', 'Amount', 'Status', 'Documents'];
+            const expectedHeaders = ['Validated', 'Date', 'Category', 'Description', 'Documents', 'Amount'];
             assert.deepStrictEqual(headersRes.data.values[0], expectedHeaders);
+
+            // Verify Summary sheet structure
+            const summaryRes = await sheets.spreadsheets.values.get({
+                spreadsheetId: testBandSheetId,
+                range: 'Summary!A1:B3'
+            });
+
+            assert.ok(summaryRes.data.values, 'Summary sheet should have data');
+            assert.strictEqual(summaryRes.data.values[0][0], 'Metric', 'Summary A1 should be "Metric"');
+            assert.strictEqual(summaryRes.data.values[0][1], 'Value', 'Summary B1 should be "Value"');
+            assert.strictEqual(summaryRes.data.values[1][0], 'Current Balance', 'Summary A2 should be "Current Balance"');
+            assert.strictEqual(summaryRes.data.values[2][0], 'Pending Transactions Amount', 'Summary A3 should be "Pending Transactions Amount"');
         });
 
         after(async () => {
@@ -431,15 +447,20 @@ describe('Google Drive & Sheets Integration', () => {
 
             const dataRes = await sheets.spreadsheets.values.get({
                 spreadsheetId: testBandSheetId,
-                range: 'Transactions!A2:G' // Skip header row
+                range: 'Transactions!A2:F' // Skip header row, new column count
             });
 
             const rows = dataRes.data.values || [];
+            // Column order: Validated | Date | Category | Description | Documents | Amount
             const syncedRow = rows.find(row => row[3] === 'Sheets Sync Test Income'); // Description is in column D (index 3)
 
             assert.ok(syncedRow, 'Transaction should appear in Google Sheet');
-            assert.strictEqual(syncedRow[1], 'Income', 'Type should be Income (capitalized)');
-            assert.strictEqual(syncedRow[4], '500', 'Amount should match');
+            assert.strictEqual(syncedRow[0], 'FALSE', 'Validated should be FALSE for pending transactions');
+            // Even though transaction_date is sent, the server ignores it for band-created transactions
+            // So the date will be empty until admin validates it
+            assert.strictEqual(syncedRow[1], '', 'Date should be empty (server ignores transaction_date from bands)');
+            // Amount is formatted as currency by Google Sheets (e.g., '500,00 €' in European locale)
+            assert.ok(syncedRow[5].includes('500'), 'Amount should contain 500 (formatted as currency)');
         });
 
         it('should update sheet when transaction is validated', async () => {
@@ -468,15 +489,17 @@ describe('Google Drive & Sheets Integration', () => {
 
             const dataRes = await sheets.spreadsheets.values.get({
                 spreadsheetId: testBandSheetId,
-                range: 'Transactions!A2:G'
+                range: 'Transactions!A2:F'
             });
 
             const rows = dataRes.data.values || [];
+            // Column order: Validated | Date | Category | Description | Documents | Amount
             const validatedRow = rows.find(row => row[3] === 'Validation Test Transaction');
 
             assert.ok(validatedRow, 'Transaction should be in sheet');
-            assert.strictEqual(validatedRow[5], 'Validated', 'Status should be Validated (capitalized)');
-            assert.strictEqual(validatedRow[0], '2025-01-20', 'Date should be set');
+            assert.strictEqual(validatedRow[0], 'TRUE', 'Validated should be TRUE (checkbox checked)');
+            // Date is formatted by Google Sheets based on locale (e.g., '20/01/2025' in European format)
+            assert.ok(validatedRow[1].includes('2025') && validatedRow[1].includes('20') && validatedRow[1].includes('01'), 'Date should contain year, day, and month components');
         });
 
         it('should update sheet when transaction is deleted', async () => {
@@ -506,10 +529,11 @@ describe('Google Drive & Sheets Integration', () => {
 
             const dataRes = await sheets.spreadsheets.values.get({
                 spreadsheetId: testBandSheetId,
-                range: 'Transactions!A2:G'
+                range: 'Transactions!A2:F'
             });
 
             const rows = dataRes.data.values || [];
+            // Column order: Validated | Date | Category | Description | Documents | Amount
             const deletedRow = rows.find(row => row[3] === 'Deletion Test Transaction');
 
             assert.strictEqual(deletedRow, undefined, 'Deleted transaction should not be in sheet');
