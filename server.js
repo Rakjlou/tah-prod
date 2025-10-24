@@ -1187,6 +1187,11 @@ app.post('/admin/transactions/:id/delete', requireAdmin, async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
+// Only start server if this file is run directly (not imported for testing)
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;

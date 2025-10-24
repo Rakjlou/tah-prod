@@ -3,7 +3,10 @@
     "version": "1.0.0",
     "main": "index.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1",
+        "test": "NODE_ENV=test node --test --test-concurrency=1 test/*.test.js",
+        "test:auth": "NODE_ENV=test node --test test/auth.test.js",
+        "test:bands": "NODE_ENV=test node --test --test-concurrency=1 test/bands.test.js test/transactions-*.test.js",
+        "test:integration": "NODE_ENV=test node --test test/google-integration.test.js",
         "start": "node --env-file=.env server.js",
         "local": "node server.js",
         "install-db": "node --env-file=.env install.js"
@@ -22,5 +25,8 @@
         "googleapis": "^164.0.0",
         "multer": "^1.4.5-lts.1",
         "sqlite3": "^5.1.7"
+    },
+    "devDependencies": {
+        "supertest": "^7.1.4"
     }
 }
