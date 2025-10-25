@@ -69,32 +69,34 @@
                 <% } else { %>
                     <!-- Folder exists - show documents -->
                     <% if (documents && documents.length > 0) { %>
-                        <table class="data-table" style="margin-bottom: 1.5rem;">
-                            <thead>
-                                <tr>
-                                    <th>Filename</th>
-                                    <th>Uploaded</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <% documents.forEach(doc => { %>
+                        <div class="table-wrapper" style="margin-bottom: 1.5rem;">
+                            <table class="data-table">
+                                <thead>
                                     <tr>
-                                        <td>
-                                            <a href="https://drive.google.com/file/d/<%= doc.drive_file_id %>/view" target="_blank">
-                                                <%= doc.filename %>
-                                            </a>
-                                        </td>
-                                        <td><%= new Date(doc.uploaded_at).toLocaleDateString() %></td>
-                                        <td>
-                                            <form action="<%= urlPrefix %>/<%= transaction.id %>/documents/<%= doc.id %>/delete" method="POST" style="display: inline;">
-                                                <button type="submit" class="btn btn-small" onclick="return confirm('Delete this document?')">Delete</button>
-                                            </form>
-                                        </td>
+                                        <th>Filename</th>
+                                        <th>Uploaded</th>
+                                        <th>Actions</th>
                                     </tr>
-                                <% }); %>
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    <% documents.forEach(doc => { %>
+                                        <tr>
+                                            <td>
+                                                <a href="https://drive.google.com/file/d/<%= doc.drive_file_id %>/view" target="_blank">
+                                                    <%= doc.filename %>
+                                                </a>
+                                            </td>
+                                            <td><%= new Date(doc.uploaded_at).toLocaleDateString() %></td>
+                                            <td>
+                                                <form action="<%= urlPrefix %>/<%= transaction.id %>/documents/<%= doc.id %>/delete" method="POST" style="display: inline;">
+                                                    <button type="submit" class="btn btn-small" onclick="return confirm('Delete this document?')">Delete</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    <% }); %>
+                                </tbody>
+                            </table>
+                        </div>
                     <% } else { %>
                         <p style="margin-bottom: 1rem;">No documents uploaded yet.</p>
                     <% } %>

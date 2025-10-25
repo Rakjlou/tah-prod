@@ -45,41 +45,43 @@
 
             <% if (bands && bands.length > 0) { %>
                 <h2 class="section-title">Existing Bands</h2>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Folder</th>
-                            <th>Created</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% bands.forEach(band => { %>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
                             <tr>
-                                <td><%= band.name %></td>
-                                <td><%= band.email %></td>
-                                <td>
-                                    <% if (band.folder_id) { %>
-                                        <a href="https://drive.google.com/drive/folders/<%= band.folder_id %>" target="_blank">View Folder</a>
-                                    <% } else { %>
-                                        N/A
-                                    <% } %>
-                                </td>
-                                <td><%= new Date(band.created_at).toLocaleDateString() %></td>
-                                <td>
-                                    <form action="/admin/bands/<%= band.id %>/reset-password" method="POST" style="display: inline; margin-right: 0.5rem;">
-                                        <button type="submit" class="btn btn-small">Reset Password</button>
-                                    </form>
-                                    <form action="/admin/bands/<%= band.id %>/delete" method="POST" style="display: inline;">
-                                        <button type="submit" class="btn btn-small" onclick="return confirm('Are you sure you want to delete <%= band.name %>? This will delete the band, user account, all transactions, and Google Drive folder. This action cannot be undone.')">Delete</button>
-                                    </form>
-                                </td>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Folder</th>
+                                <th>Created</th>
+                                <th>Actions</th>
                             </tr>
-                        <% }); %>
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            <% bands.forEach(band => { %>
+                                <tr>
+                                    <td><%= band.name %></td>
+                                    <td><%= band.email %></td>
+                                    <td>
+                                        <% if (band.folder_id) { %>
+                                            <a href="https://drive.google.com/drive/folders/<%= band.folder_id %>" target="_blank">View Folder</a>
+                                        <% } else { %>
+                                            N/A
+                                        <% } %>
+                                    </td>
+                                    <td><%= new Date(band.created_at).toLocaleDateString() %></td>
+                                    <td>
+                                        <form action="/admin/bands/<%= band.id %>/reset-password" method="POST" style="display: inline; margin-right: 0.5rem;">
+                                            <button type="submit" class="btn btn-small">Reset Password</button>
+                                        </form>
+                                        <form action="/admin/bands/<%= band.id %>/delete" method="POST" style="display: inline;">
+                                            <button type="submit" class="btn btn-small" onclick="return confirm('Are you sure you want to delete <%= band.name %>? This will delete the band, user account, all transactions, and Google Drive folder. This action cannot be undone.')">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
             <% } else { %>
                 <p style="text-align: center; padding: 2rem;">No bands created yet.</p>
             <% } %>
