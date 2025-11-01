@@ -56,6 +56,14 @@
                 </div>
             <% } %>
 
+            <!-- Qonto Transaction Linker (Admin Only) -->
+            <%- include('partials/qonto-linker', {
+                isAdmin: isAdmin,
+                transaction: transaction,
+                linkedQontoTransactions: linkedQontoTransactions || [],
+                band: band
+            }) %>
+
             <!-- Document Management -->
             <div class="info-box">
                 <h2 class="section-title">Documents</h2>

@@ -133,6 +133,32 @@ async function install() {
 
         console.log('');
         console.log('='.repeat(50));
+        console.log('Qonto Bank API Configuration (Optional)');
+        console.log('='.repeat(50));
+        console.log('You can configure Qonto API now or later via /config');
+        console.log('');
+
+        const configureQonto = await question('Configure Qonto API now? (y/n): ');
+
+        if (configureQonto.toLowerCase() === 'y' || configureQonto.toLowerCase() === 'yes') {
+            const envQontoLogin = process.env.QONTO_API_LOGIN || '';
+            const envQontoSecret = process.env.QONTO_API_SECRET || '';
+
+            const qontoLogin = await question(`Qonto API Login [${envQontoLogin}]: `) || envQontoLogin;
+            const qontoSecret = await question(`Qonto API Secret [${envQontoSecret}]: `) || envQontoSecret;
+
+            if (qontoLogin) {
+                await setConfig('qonto_api_login', qontoLogin);
+                console.log('✓ Qonto API Login saved');
+            }
+            if (qontoSecret) {
+                await setConfig('qonto_api_secret', qontoSecret);
+                console.log('✓ Qonto API Secret saved');
+            }
+        }
+
+        console.log('');
+        console.log('='.repeat(50));
         console.log('Installation completed successfully!');
         console.log('='.repeat(50));
         console.log('');

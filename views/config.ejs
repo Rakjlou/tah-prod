@@ -29,8 +29,65 @@
                     <label for="google_drive_folder_id" class="form-label">Google Drive Folder ID</label>
                     <input type="text" id="google_drive_folder_id" name="google_drive_folder_id" class="form-input" value="<%= typeof config !== 'undefined' && config.google_drive_folder_id ? config.google_drive_folder_id : '' %>" placeholder="Folder ID from Google Drive URL" required>
                 </div>
+
+                <h2 class="section-title" style="margin-top: 2rem;">Qonto Bank API Configuration</h2>
+                <div class="form-group">
+                    <label for="qonto_api_login" class="form-label">Qonto API Login</label>
+                    <input type="text" id="qonto_api_login" name="qonto_api_login" class="form-input" value="<%= typeof config !== 'undefined' && config.qonto_api_login ? config.qonto_api_login : '' %>" placeholder="Your Qonto API Login">
+                    <small class="form-help">Get this from Qonto: Integrations and Partnerships > API key</small>
+                </div>
+                <div class="form-group">
+                    <label for="qonto_api_secret" class="form-label">Qonto API Secret Key</label>
+                    <input type="password" id="qonto_api_secret" name="qonto_api_secret" class="form-input" value="<%= typeof config !== 'undefined' && config.qonto_api_secret ? config.qonto_api_secret : '' %>" placeholder="Your Qonto API Secret Key">
+                    <small class="form-help">Stored encrypted in the database</small>
+                </div>
+                <div class="form-group">
+                    <button type="button" class="btn btn-secondary" onclick="testQontoConnection()">Test Qonto Connection</button>
+                    <div id="qonto-test-result" style="margin-top: 0.5rem;"></div>
+                </div>
+
                 <button type="submit" class="btn">Save Configuration</button>
             </form>
+
+            <script>
+            async function testQontoConnection() {
+                const login = document.getElementById('qonto_api_login').value;
+                const secret = document.getElementById('qonto_api_secret').value;
+                const resultDiv = document.getElementById('qonto-test-result');
+
+                if (!login || !secret) {
+                    resultDiv.textContent = '⚠️ Please enter both login and secret key';
+                    resultDiv.style.color = '#ffeb3b';
+                    return;
+                }
+
+                resultDiv.textContent = 'Testing connection...';
+                resultDiv.style.color = 'white';
+
+                try {
+                    const response = await fetch('/admin/test-qonto', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ login, secret })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        resultDiv.textContent = '✓ ' + data.message;
+                        resultDiv.style.color = '#4caf50';
+                    } else {
+                        resultDiv.textContent = '✗ ' + data.message;
+                        resultDiv.style.color = '#f44336';
+                    }
+                } catch (err) {
+                    resultDiv.textContent = '✗ Connection test failed: ' + err.message;
+                    resultDiv.style.color = '#f44336';
+                }
+            }
+            </script>
 
             <% if (googleConfigured && !isGoogleAuthenticated) { %>
                 <div class="info-box" style="margin-top: 2rem;">

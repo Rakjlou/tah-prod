@@ -1,0 +1,231 @@
+<% if (isAdmin) { %>
+<div class="qonto-linker-section" style="margin-top: 2rem; border-top: 1px solid white; padding-top: 2rem;">
+    <h2 style="margin-bottom: 1rem;">Link to Bank Transactions (Qonto)</h2>
+
+    <!-- Currently linked transactions -->
+    <% if (linkedQontoTransactions && linkedQontoTransactions.length > 0) { %>
+        <div class="linked-transactions" style="margin-bottom: 1.5rem;">
+            <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">Currently Linked:</h3>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Counterparty</th>
+                        <th>Reference</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% linkedQontoTransactions.forEach(link => { %>
+                        <tr>
+                            <td><%= link.qonto_settled_at ? new Date(link.qonto_settled_at).toLocaleDateString() : '-' %></td>
+                            <td><%= link.qonto_amount %> <%= link.qonto_currency || 'EUR' %></td>
+                            <td><%= link.qonto_label || '-' %></td>
+                            <td><%= link.qonto_reference || '-' %></td>
+                            <td>
+                                <button type="button" class="btn btn-small" onclick="unlinkQonto(<%= link.id %>)" style="background-color: #f44336;">
+                                    Unlink
+                                </button>
+                            </td>
+                        </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+        </div>
+    <% } else { %>
+        <p style="margin-bottom: 1rem; color: #888;">No Qonto transactions linked yet.</p>
+    <% } %>
+
+    <!-- Search button -->
+    <button type="button" class="btn" onclick="searchQontoMatches()" id="search-qonto-btn">
+        Search Qonto Transactions
+    </button>
+
+    <!-- Loading indicator -->
+    <div id="qonto-loading" style="display: none; margin-top: 1rem;">
+        <p>Searching Qonto transactions...</p>
+    </div>
+
+    <!-- Error display -->
+    <div id="qonto-error" style="display: none; margin-top: 1rem; color: #f44336;">
+    </div>
+
+    <!-- Results container -->
+    <div id="qonto-matches" style="display: none; margin-top: 1.5rem;">
+        <h3 style="font-size: 1rem; margin-bottom: 0.5rem;">Qonto Transactions:</h3>
+        <div id="qonto-matches-content"></div>
+        <button type="button" class="btn" onclick="linkSelected()" id="link-selected-btn" style="margin-top: 1rem;">
+            Link Selected
+        </button>
+    </div>
+</div>
+
+<script>
+let currentMatches = [];
+
+async function searchQontoMatches() {
+    const searchBtn = document.getElementById('search-qonto-btn');
+    const loadingDiv = document.getElementById('qonto-loading');
+    const errorDiv = document.getElementById('qonto-error');
+    const matchesDiv = document.getElementById('qonto-matches');
+
+    // Reset UI
+    searchBtn.disabled = true;
+    loadingDiv.style.display = 'block';
+    errorDiv.style.display = 'none';
+    matchesDiv.style.display = 'none';
+
+    try {
+        const response = await fetch('/admin/transactions/<%= transaction.id %>/search-qonto', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'Failed to search Qonto transactions');
+        }
+
+        currentMatches = data.matches || [];
+
+        if (currentMatches.length === 0) {
+            errorDiv.textContent = 'No completed Qonto transactions found in your account.';
+            errorDiv.style.display = 'block';
+        } else {
+            displayMatches(currentMatches);
+            matchesDiv.style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Error searching Qonto:', error);
+        errorDiv.textContent = error.message || 'Failed to search Qonto transactions';
+        errorDiv.style.display = 'block';
+    } finally {
+        loadingDiv.style.display = 'none';
+        searchBtn.disabled = false;
+    }
+}
+
+function displayMatches(matches) {
+    const contentDiv = document.getElementById('qonto-matches-content');
+
+    let html = '<table class="data-table"><thead><tr>';
+    html += '<th style="width: 50px;"><input type="checkbox" id="select-all-qonto" onclick="toggleSelectAll()"></th>';
+    html += '<th>Date</th>';
+    html += '<th>Amount</th>';
+    html += '<th>Side</th>';
+    html += '<th>Counterparty</th>';
+    html += '<th>Reference</th>';
+    html += '</tr></thead><tbody>';
+
+    matches.forEach(match => {
+        const isLinked = match.isLinked;
+        const linkedNote = isLinked ? ` (Already linked to #${match.linkedTo.join(', #')})` : '';
+        // Don't disable checkbox - allow linking same Qonto transaction to multiple TAH transactions
+
+        html += `<tr>`;
+        html += `<td><input type="checkbox" class="qonto-checkbox" data-qonto-id="${match.id}"></td>`;
+        html += `<td>${match.settled_at ? new Date(match.settled_at).toLocaleDateString() : '-'}</td>`;
+        html += `<td>${match.amount} ${match.currency || 'EUR'}</td>`;
+        html += `<td>${match.side === 'credit' ? 'Income' : 'Expense'}</td>`;
+        html += `<td>${match.label || '-'}${linkedNote}</td>`;
+        html += `<td>${match.reference || '-'}</td>`;
+        html += '</tr>';
+    });
+
+    html += '</tbody></table>';
+    contentDiv.innerHTML = html;
+}
+
+function toggleSelectAll() {
+    const selectAll = document.getElementById('select-all-qonto');
+    const checkboxes = document.querySelectorAll('.qonto-checkbox');
+
+    checkboxes.forEach(cb => {
+        cb.checked = selectAll.checked;
+    });
+}
+
+async function linkSelected() {
+    const checkboxes = document.querySelectorAll('.qonto-checkbox:checked');
+
+    if (checkboxes.length === 0) {
+        alert('Please select at least one Qonto transaction to link');
+        return;
+    }
+
+    const selectedIds = Array.from(checkboxes).map(cb => cb.dataset.qontoId);
+    const selectedTransactions = currentMatches.filter(m => selectedIds.includes(m.id));
+
+    const linkBtn = document.getElementById('link-selected-btn');
+    linkBtn.disabled = true;
+    linkBtn.textContent = 'Linking...';
+
+    try {
+        const response = await fetch('/admin/transactions/<%= transaction.id %>/link-qonto', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                qontoTransactions: selectedTransactions
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'Failed to link Qonto transactions');
+        }
+
+        // Show results
+        if (data.linked && data.linked.length > 0) {
+            alert(`Successfully linked ${data.linked.length} Qonto transaction(s)`);
+        }
+
+        if (data.errors && data.errors.length > 0) {
+            const errorMessages = data.errors.map(e => e.message).join('\n');
+            alert(`Some transactions could not be linked:\n${errorMessages}`);
+        }
+
+        // Reload page to show updated links
+        window.location.reload();
+    } catch (error) {
+        console.error('Error linking Qonto transactions:', error);
+        alert(error.message || 'Failed to link Qonto transactions');
+        linkBtn.disabled = false;
+        linkBtn.textContent = 'Link Selected';
+    }
+}
+
+async function unlinkQonto(linkId) {
+    if (!confirm('Are you sure you want to unlink this Qonto transaction?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/admin/qonto-links/${linkId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || 'Failed to unlink Qonto transaction');
+        }
+
+        alert('Qonto transaction unlinked successfully');
+        window.location.reload();
+    } catch (error) {
+        console.error('Error unlinking Qonto transaction:', error);
+        alert(error.message || 'Failed to unlink Qonto transaction');
+    }
+}
+</script>
+<% } %>

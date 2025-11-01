@@ -11,6 +11,8 @@ const googleAuth = require('./lib/google-auth');
 const { sendBandWelcomeEmail, sendPasswordResetEmail } = require('./lib/email');
 const configService = require('./lib/config-service');
 const { syncTransactionsToSheet } = require('./lib/google-sheets');
+const qontoApi = require('./lib/qonto-api');
+const qontoDb = require('./lib/qonto-db');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -24,6 +26,7 @@ app.set('views', path.join(__dirname, 'views'));
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
 
 const SESSIONS_DB_DIR = path.join(__dirname, 'data');
 const SESSIONS_DB_NAME = 'sessions.db';
@@ -762,10 +765,13 @@ async function handleTransactionDetail(req, res) {
             return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
         }
 
+        // Get band information
+        const band = await getBandById(transaction.band_id);
+
         // Verify ownership for bands
         if (!isAdmin) {
-            const band = await getBandByUserId(req.session.user.id);
-            if (!band || transaction.band_id !== band.id) {
+            const userBand = await getBandByUserId(req.session.user.id);
+            if (!userBand || transaction.band_id !== userBand.id) {
                 req.session.error = 'Access denied';
                 return res.redirect('/transactions');
             }
@@ -773,6 +779,17 @@ async function handleTransactionDetail(req, res) {
 
         const categories = await getAllCategories();
         const documents = await getTransactionDocuments(req.params.id);
+
+        // Fetch linked Qonto transactions if admin
+        let linkedQontoTransactions = [];
+        if (isAdmin) {
+            try {
+                linkedQontoTransactions = await qontoDb.getLinkedTransactions(transaction.id);
+            } catch (error) {
+                console.error('Error fetching linked Qonto transactions:', error);
+                // Non-critical error, continue without Qonto data
+            }
+        }
 
         const urlPrefix = isAdmin ? '/admin/transactions' : '/transactions';
         const backUrl = isAdmin ? '/admin/transactions' : '/transactions';
@@ -783,7 +800,9 @@ async function handleTransactionDetail(req, res) {
             documents,
             urlPrefix,
             backUrl,
-            isAdmin
+            isAdmin,
+            band,
+            linkedQontoTransactions
         });
     } catch (error) {
         console.error('Error loading transaction details:', error);
@@ -1184,6 +1203,181 @@ app.post('/admin/transactions/:id/delete', requireAdmin, async (req, res) => {
     } catch (error) {
         console.error('Error deleting transaction:', error);
         res.redirect('/admin/transactions?error=' + encodeURIComponent('Failed to delete transaction'));
+    }
+});
+
+// ======================
+// QONTO INTEGRATION ROUTES
+// ======================
+
+// Test Qonto API connection (from config page)
+app.post('/admin/test-qonto', requireAdmin, async (req, res) => {
+    try {
+        // Temporarily override config with provided credentials
+        const { login, secret } = req.body;
+
+        if (!login || !secret) {
+            return res.json({
+                success: false,
+                message: 'Missing login or secret key'
+            });
+        }
+
+        // Test with temporary credentials by making a direct request
+        const https = require('https');
+        const authHeader = `${login}:${secret}`;
+
+        await new Promise((resolve, reject) => {
+            const options = {
+                hostname: 'thirdparty.qonto.com',
+                path: '/v2/organization',
+                method: 'GET',
+                headers: {
+                    'Authorization': authHeader,
+                    'Accept': 'application/json'
+                }
+            };
+
+            const req = https.request(options, (response) => {
+                let data = '';
+                response.on('data', (chunk) => { data += chunk; });
+                response.on('end', () => {
+                    if (response.statusCode >= 200 && response.statusCode < 300) {
+                        try {
+                            const parsed = JSON.parse(data);
+                            resolve(parsed);
+                        } catch (err) {
+                            reject(new Error('Invalid API response'));
+                        }
+                    } else {
+                        reject(new Error(`API error: ${response.statusCode}`));
+                    }
+                });
+            });
+
+            req.on('error', (err) => reject(err));
+            req.end();
+        });
+
+        res.json({
+            success: true,
+            message: 'Successfully connected to Qonto API'
+        });
+    } catch (error) {
+        console.error('Qonto connection test failed:', error);
+        res.json({
+            success: false,
+            message: error.message || 'Connection failed'
+        });
+    }
+});
+
+// Search for matching Qonto transactions
+app.post('/admin/transactions/:id/search-qonto', requireAdmin, async (req, res) => {
+    try {
+        const transaction = await getTransactionById(req.params.id);
+        if (!transaction) {
+            return res.status(404).json({ error: 'Transaction not found' });
+        }
+
+        // Search for all Qonto transactions
+        const matches = await qontoApi.searchMatchingTransactions();
+
+        // Check which ones are already linked
+        const qontoIds = matches.map(m => m.id);
+        const linkStatus = await qontoDb.checkMultipleLinks(qontoIds);
+
+        // Enrich matches with link status
+        const enrichedMatches = matches.map(match => ({
+            ...match,
+            isLinked: linkStatus[match.id].isLinked,
+            linkedTo: linkStatus[match.id].linkedTo
+        }));
+
+        res.json({
+            success: true,
+            matches: enrichedMatches
+        });
+    } catch (error) {
+        console.error('Error searching Qonto transactions:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to search Qonto transactions'
+        });
+    }
+});
+
+// Link selected Qonto transaction(s)
+app.post('/admin/transactions/:id/link-qonto', requireAdmin, async (req, res) => {
+    try {
+        const transaction = await getTransactionById(req.params.id);
+        if (!transaction) {
+            return res.status(404).json({ error: 'Transaction not found' });
+        }
+
+        const { qontoTransactions } = req.body; // Array of Qonto transaction objects
+
+        if (!Array.isArray(qontoTransactions) || qontoTransactions.length === 0) {
+            return res.status(400).json({ error: 'No Qonto transactions provided' });
+        }
+
+        // Note: Transaction structure validation is handled by database constraints.
+        // The per-transaction try-catch below captures validation errors and returns
+        // them in the errors array, allowing partial success (some links created, some failed).
+
+        const linked = [];
+        const errors = [];
+
+        for (const qontoTx of qontoTransactions) {
+            try {
+                // Create link (allow duplicate qonto_id for different TAH transactions)
+                const link = await qontoDb.createLink(
+                    transaction.id,
+                    qontoTx,
+                    req.session.user.id
+                );
+                linked.push(link);
+            } catch (error) {
+                errors.push({
+                    qonto_id: qontoTx.id,
+                    message: error.message
+                });
+            }
+        }
+
+        res.json({
+            success: true,
+            linked,
+            errors
+        });
+    } catch (error) {
+        console.error('Error linking Qonto transactions:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to link Qonto transactions'
+        });
+    }
+});
+
+// Unlink a Qonto transaction
+app.delete('/admin/qonto-links/:linkId', requireAdmin, async (req, res) => {
+    try {
+        const deleted = await qontoDb.deleteLink(req.params.linkId);
+
+        if (!deleted) {
+            return res.status(404).json({ error: 'Link not found' });
+        }
+
+        res.json({
+            success: true,
+            message: 'Qonto transaction unlinked successfully'
+        });
+    } catch (error) {
+        console.error('Error unlinking Qonto transaction:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to unlink Qonto transaction'
+        });
     }
 });
 
