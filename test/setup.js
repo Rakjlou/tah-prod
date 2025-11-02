@@ -125,6 +125,25 @@ async function createTables(db) {
             filename TEXT NOT NULL,
             uploaded_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE CASCADE
+        )`,
+
+        // Qonto transaction links table
+        `CREATE TABLE qonto_transaction_links (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            transaction_id INTEGER NOT NULL,
+            qonto_id TEXT NOT NULL,
+            qonto_transaction_id TEXT,
+            qonto_amount REAL,
+            qonto_currency TEXT,
+            qonto_settled_at TEXT,
+            qonto_label TEXT,
+            qonto_reference TEXT,
+            qonto_note TEXT,
+            qonto_web_url TEXT,
+            linked_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            linked_by INTEGER,
+            FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE CASCADE,
+            FOREIGN KEY (linked_by) REFERENCES users(id)
         )`
     ];
 

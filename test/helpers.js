@@ -185,6 +185,87 @@ async function getTestTransaction(db, id) {
     });
 }
 
+/**
+ * Create test Qonto transaction data with defaults
+ * @param {Object} overrides - Fields to override
+ * @returns {Object} Qonto transaction data
+ */
+function createQontoTransactionData(overrides = {}) {
+    return {
+        id: `qonto-${Date.now()}`,
+        transaction_id: `tx-${Date.now()}`,
+        amount: -100.00,
+        currency: 'EUR',
+        settled_at: new Date().toISOString(),
+        emitted_at: new Date().toISOString(),
+        label: 'Test Qonto Transaction',
+        reference: 'REF-TEST',
+        note: 'Test note',
+        qonto_web_url: `https://app.qonto.com/transactions/qonto-${Date.now()}`,
+        status: 'completed',
+        ...overrides
+    };
+}
+
+/**
+ * Create a Qonto transaction link directly in the database
+ * @param {Object} db - Database connection
+ * @param {number} transactionId - TAH transaction ID
+ * @param {Object} qontoData - Qonto transaction data
+ * @param {number} userId - User ID who created the link
+ * @returns {Promise<number>} Link ID
+ */
+async function createTestQontoLink(db, transactionId, qontoData = {}, userId = 1) {
+    const qonto = createQontoTransactionData(qontoData);
+
+    return new Promise((resolve, reject) => {
+        db.run(
+            `INSERT INTO qonto_transaction_links (
+                transaction_id, qonto_id, qonto_transaction_id,
+                qonto_amount, qonto_currency, qonto_settled_at,
+                qonto_label, qonto_reference, qonto_note,
+                qonto_web_url, linked_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                transactionId,
+                qonto.id,
+                qonto.transaction_id,
+                qonto.amount,
+                qonto.currency,
+                qonto.settled_at,
+                qonto.label,
+                qonto.reference || null,
+                qonto.note || null,
+                qonto.qonto_web_url || null,
+                userId
+            ],
+            function(err) {
+                if (err) return reject(err);
+                resolve(this.lastID);
+            }
+        );
+    });
+}
+
+/**
+ * Get all Qonto links for a transaction
+ * @param {Object} db - Database connection
+ * @param {number} transactionId - TAH transaction ID
+ * @returns {Promise<Array>} Array of link objects
+ */
+async function getTestQontoLinks(db, transactionId) {
+    return new Promise((resolve, reject) => {
+        db.all(
+            'SELECT * FROM qonto_transaction_links WHERE transaction_id = ?',
+            [transactionId],
+            (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows || []);
+            }
+        );
+    });
+}
+
 module.exports = {
     authenticateAs,
     createTransactionData,
@@ -194,5 +275,8 @@ module.exports = {
     createTestTransaction,
     createTestCategory,
     getTestUser,
-    getTestTransaction
+    getTestTransaction,
+    createQontoTransactionData,
+    createTestQontoLink,
+    getTestQontoLinks
 };
