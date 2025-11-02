@@ -242,3 +242,178 @@
     outline: 3px solid var(--color-fg);
     outline-offset: -1px;
 }
+
+/* Reconciliation Dashboard Styles */
+.reconciliation-stats {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.stat-card {
+    flex: 1;
+    min-width: 200px;
+    padding: 1.5rem;
+    border: var(--border-standard);
+    background-color: var(--color-bg);
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    letter-spacing: var(--spacing-letter);
+    color: #888;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    letter-spacing: var(--spacing-letter-wide);
+}
+
+.stat-success {
+    color: #4caf50;
+}
+
+.stat-warning {
+    color: #f44336;
+}
+
+.reconciliation-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    margin-bottom: 2rem;
+}
+
+.reconciliation-table thead tr {
+    border-bottom: var(--border-standard);
+}
+
+.reconciliation-table tbody tr {
+    border-bottom: var(--border-standard);
+}
+
+.reconciliation-table th {
+    text-align: left;
+    padding: 0.75rem;
+    font-weight: normal;
+    letter-spacing: var(--spacing-letter);
+    font-size: 0.9rem;
+}
+
+.reconciliation-table td {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+}
+
+.difference-cell.has-difference {
+    color: #f44336;
+    font-weight: bold;
+}
+
+.issues-cell {
+    font-size: 0.8rem;
+}
+
+.issue-badge {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    margin-right: 0.5rem;
+    border: 1px solid #f44336;
+    color: #f44336;
+    font-size: 0.75rem;
+    letter-spacing: var(--spacing-letter);
+}
+
+.success-message {
+    padding: 2rem;
+    border: var(--border-standard);
+    text-align: center;
+    color: #4caf50;
+    font-size: 1.1rem;
+    margin: 2rem 0;
+}
+
+/* Validation Badges */
+.validation-badge {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    font-size: 0.85rem;
+    letter-spacing: var(--spacing-letter);
+    border: var(--border-standard);
+}
+
+.badge-success {
+    color: #4caf50;
+    border-color: #4caf50;
+}
+
+.badge-error {
+    color: #f44336;
+    border-color: #f44336;
+}
+
+.badge-pending {
+    color: #ffeb3b;
+    border-color: #ffeb3b;
+}
+
+.badge-validated {
+    color: #4caf50;
+    border-color: #4caf50;
+}
+
+/* Qonto Linker Validation Status */
+.validation-status {
+    padding: 1rem;
+    border: var(--border-standard);
+    background-color: var(--color-bg);
+}
+
+.validation-summary {
+    font-size: 0.95rem;
+    line-height: 1.8;
+}
+
+/* Fully Allocated Indication */
+.fully-allocated {
+    color: #f44336;
+    font-style: italic;
+}
+
+/* Filter Section */
+.filters {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    border: var(--border-standard);
+}
+
+.filters form {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filter-group label {
+    font-size: 0.9rem;
+    letter-spacing: var(--spacing-letter);
+}
+
+.filter-group select {
+    padding: 0.5rem;
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    border: var(--border-standard);
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    min-width: 150px;
+}

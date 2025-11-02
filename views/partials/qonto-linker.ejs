@@ -2,6 +2,29 @@
 <div class="qonto-linker-section" style="margin-top: 2rem; border-top: 1px solid white; padding-top: 2rem;">
     <h2 style="margin-bottom: 1rem;">Link to Bank Transactions (Qonto)</h2>
 
+    <!-- Validation Status -->
+    <div id="validation-status" class="validation-status" style="margin-bottom: 1.5rem;">
+        <div class="validation-summary">
+            <strong>Website Transaction:</strong>
+            <%= transaction.type === 'expense' ? '-' : '+' %><%= transaction.amount.toFixed(2) %> €
+
+            <% if (linkedQontoTransactions && linkedQontoTransactions.length > 0) { %>
+                <%
+                    const linkedTotal = linkedQontoTransactions.reduce((sum, link) => sum + (link.allocated_amount || link.qonto_amount || 0), 0);
+                    const expectedTotal = transaction.type === 'expense' ? -transaction.amount : transaction.amount;
+                    const difference = Math.abs(linkedTotal - expectedTotal);
+                    const isValid = difference < 0.01;
+                %>
+                <span style="margin-left: 1rem;">
+                    <strong>Linked Qonto Total:</strong> <%= linkedTotal.toFixed(2) %> €
+                </span>
+                <span class="validation-badge <%= isValid ? 'badge-success' : 'badge-error' %>" style="margin-left: 1rem;">
+                    <%= isValid ? '✓ Match' : '⚠ Discrepancy: ' + difference.toFixed(2) + ' €' %>
+                </span>
+            <% } %>
+        </div>
+    </div>
+
     <!-- Currently linked transactions -->
     <% if (linkedQontoTransactions && linkedQontoTransactions.length > 0) { %>
         <div class="linked-transactions" style="margin-bottom: 1.5rem;">
@@ -20,7 +43,12 @@
                     <% linkedQontoTransactions.forEach(link => { %>
                         <tr>
                             <td><%= link.qonto_settled_at ? new Date(link.qonto_settled_at).toLocaleDateString() : '-' %></td>
-                            <td><%= link.qonto_amount %> <%= link.qonto_currency || 'EUR' %></td>
+                            <td>
+                                <%= (link.allocated_amount || link.qonto_amount) %> <%= link.qonto_currency || 'EUR' %>
+                                <% if (link.allocated_amount && Math.abs(link.allocated_amount) < Math.abs(link.qonto_amount)) { %>
+                                    <span style="color: #888; font-size: 0.9em;">(of <%= link.qonto_amount %>)</span>
+                                <% } %>
+                            </td>
                             <td><%= link.qonto_label || '-' %></td>
                             <td><%= link.qonto_reference || '-' %></td>
                             <td>
@@ -116,27 +144,43 @@ function displayMatches(matches) {
     html += '<th style="width: 50px;"><input type="checkbox" id="select-all-qonto" onclick="toggleSelectAll()"></th>';
     html += '<th>Date</th>';
     html += '<th>Amount</th>';
-    html += '<th>Side</th>';
+    html += '<th>Available</th>';
+    html += '<th>Direction</th>';
     html += '<th>Counterparty</th>';
     html += '<th>Reference</th>';
+    html += '<th>Status</th>';
     html += '</tr></thead><tbody>';
 
     matches.forEach(match => {
         const isLinked = match.isLinked;
-        const linkedNote = isLinked ? ` (Already linked to #${match.linkedTo.join(', #')})` : '';
-        // Don't disable checkbox - allow linking same Qonto transaction to multiple TAH transactions
+        const linkedNote = isLinked ? ` (linked to #${match.linkedTo.join(', #')})` : '';
+        const isFullyAllocated = match.isFullyAllocated || false;
+        const available = match.availableAmount !== undefined ? match.availableAmount.toFixed(2) : 'N/A';
+        const directionMatches = match.directionMatches !== undefined ? match.directionMatches : true;
+        const directionIcon = directionMatches ? '<span style="color: #4caf50;">✓</span>' : '<span style="color: #f44336;">✗</span>';
 
-        html += `<tr>`;
-        html += `<td><input type="checkbox" class="qonto-checkbox" data-qonto-id="${match.id}"></td>`;
+        // Disable checkbox if fully allocated or direction doesn't match
+        const disableCheckbox = isFullyAllocated || !directionMatches;
+        const rowClass = disableCheckbox ? 'style="opacity: 0.5;"' : '';
+
+        html += `<tr ${rowClass}>`;
+        html += `<td><input type="checkbox" class="qonto-checkbox" data-qonto-id="${match.id}" ${disableCheckbox ? 'disabled' : ''}></td>`;
         html += `<td>${match.settled_at ? new Date(match.settled_at).toLocaleDateString() : '-'}</td>`;
         html += `<td>${match.amount} ${match.currency || 'EUR'}</td>`;
-        html += `<td>${match.side === 'credit' ? 'Income' : 'Expense'}</td>`;
+        html += `<td class="${isFullyAllocated ? 'fully-allocated' : ''}">${available} €${isFullyAllocated ? ' (Full)' : ''}</td>`;
+        html += `<td>${directionIcon}</td>`;
         html += `<td>${match.label || '-'}${linkedNote}</td>`;
         html += `<td>${match.reference || '-'}</td>`;
+        html += `<td>${match.status || 'completed'}</td>`;
         html += '</tr>';
     });
 
     html += '</tbody></table>';
+    html += '<div style="margin-top: 1rem; font-size: 0.9rem; color: #888;">';
+    html += '<p>✓ = Direction matches transaction type</p>';
+    html += '<p>Available = Remaining amount that can be allocated</p>';
+    html += '<p>Grayed out transactions cannot be linked (fully allocated or wrong direction)</p>';
+    html += '</div>';
     contentDiv.innerHTML = html;
 }
 
@@ -150,7 +194,7 @@ function toggleSelectAll() {
 }
 
 async function linkSelected() {
-    const checkboxes = document.querySelectorAll('.qonto-checkbox:checked');
+    const checkboxes = document.querySelectorAll('.qonto-checkbox:checked:not([disabled])');
 
     if (checkboxes.length === 0) {
         alert('Please select at least one Qonto transaction to link');
@@ -162,7 +206,7 @@ async function linkSelected() {
 
     const linkBtn = document.getElementById('link-selected-btn');
     linkBtn.disabled = true;
-    linkBtn.textContent = 'Linking...';
+    linkBtn.textContent = 'Validating...';
 
     try {
         const response = await fetch('/admin/transactions/<%= transaction.id %>/link-qonto', {
@@ -178,18 +222,46 @@ async function linkSelected() {
         const data = await response.json();
 
         if (!response.ok || !data.success) {
-            throw new Error(data.error || 'Failed to link Qonto transactions');
+            // Validation failed - show detailed error messages
+            if (data.errors && data.errors.length > 0) {
+                let errorMsg = 'Validation Failed:\n\n';
+                errorMsg += data.errors.join('\n');
+                if (data.summary) {
+                    errorMsg += '\n\nSummary:\n';
+                    errorMsg += `Website Amount: ${data.summary.websiteAmount} € (${data.summary.websiteType})\n`;
+                    errorMsg += `Expected Qonto Total: ${data.summary.expectedQontoTotal.toFixed(2)} €\n`;
+                    errorMsg += `Actual Qonto Total: ${data.summary.combinedQontoTotal.toFixed(2)} €\n`;
+                    errorMsg += `Difference: ${data.summary.difference.toFixed(2)} €\n`;
+                }
+                alert(errorMsg);
+            } else {
+                throw new Error(data.error || 'Failed to link Qonto transactions');
+            }
+            linkBtn.disabled = false;
+            linkBtn.textContent = 'Link Selected';
+            return;
         }
 
-        // Show results
+        // Show success results
+        let successMsg = '';
         if (data.linked && data.linked.length > 0) {
-            alert(`Successfully linked ${data.linked.length} Qonto transaction(s)`);
+            successMsg = `Successfully linked ${data.linked.length} Qonto transaction(s)!\n\n`;
+        }
+
+        if (data.validation) {
+            successMsg += 'Validation Summary:\n';
+            successMsg += `Website Amount: ${data.validation.websiteAmount} € (${data.validation.websiteType})\n`;
+            successMsg += `Qonto Total: ${data.validation.combinedQontoTotal.toFixed(2)} €\n`;
+            successMsg += `Difference: ${data.validation.difference.toFixed(2)} €\n`;
+            successMsg += data.validation.isAmountMatch ? '✓ Amounts match!' : '⚠ Amounts do not match';
         }
 
         if (data.errors && data.errors.length > 0) {
             const errorMessages = data.errors.map(e => e.message).join('\n');
-            alert(`Some transactions could not be linked:\n${errorMessages}`);
+            successMsg += `\n\nSome transactions could not be linked:\n${errorMessages}`;
         }
+
+        alert(successMsg);
 
         // Reload page to show updated links
         window.location.reload();
