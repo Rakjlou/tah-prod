@@ -1119,7 +1119,7 @@ app.post('/admin/transactions/:id/documents/:docId/delete', requireAdmin, handle
 app.get('/admin/transactions', requireAdmin, async (req, res) => {
     try {
         const bandFilter = req.query.band ? parseInt(req.query.band) : null;
-        const statusFilter = req.query.status || null;
+        const statusFilter = req.query.status !== undefined ? req.query.status : 'pending';
 
         const transactions = await getAllTransactionsWithBands(bandFilter, statusFilter);
         const bands = await getAllBands();
