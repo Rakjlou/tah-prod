@@ -7,14 +7,14 @@
     <%- include('partials/navbar') %>
 
     <main class="main-content">
-        <div class="form-container" style="max-width: 1400px; width: 100%;">
+        <div class="form-container container-full-wide">
             <h1 class="form-title">All Transactions</h1>
             <%- include('partials/messages') %>
 
             <div class="info-box">
-                <div style="margin-bottom: 1.5rem;">
-                    <form method="GET" action="/admin/transactions" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
-                        <div class="form-group" style="margin-bottom: 0; min-width: 200px;">
+                <div class="mb-1">
+                    <form method="GET" action="/admin/transactions" class="flex flex-gap-1 flex-align-end flex-wrap">
+                        <div class="form-group mb-0 min-width-200">
                             <label for="band" class="form-label">Filter by Band</label>
                             <select id="band" name="band" class="form-input" onchange="this.form.submit()">
                                 <option value="">All Bands</option>
@@ -33,7 +33,7 @@
                             </select>
                         </div>
 
-                        <div class="form-group" style="margin-bottom: 0; min-width: 150px;">
+                        <div class="form-group mb-0 min-width-150">
                             <label for="status" class="form-label">Filter by Status</label>
                             <select id="status" name="status" class="form-input" onchange="this.form.submit()">
                                 <option value="">All Statuses</option>

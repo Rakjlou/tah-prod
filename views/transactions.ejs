@@ -7,18 +7,18 @@
     <%- include('partials/navbar') %>
 
     <main class="main-content">
-        <div class="form-container" style="max-width: 1200px; width: 100%;">
+        <div class="form-container container-extra-wide">
             <h1 class="form-title">My Transactions</h1>
             <%- include('partials/messages') %>
 
             <div class="info-box">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <div class="flex flex-justify-between flex-align-center mb-1">
                     <div>
-                        <p style="font-size: 1.2rem; margin-bottom: 0.5rem;">
+                        <p class="text-large mb-half">
                             <strong>Current Balance:</strong> <%= balance.toFixed(2) %> €
                         </p>
                         <% if (pendingCount > 0) { %>
-                            <p style="font-size: 0.9rem; color: var(--color-fg); opacity: 0.8;">
+                            <p class="text-small color-fg opacity-80">
                                 (<%= pendingCount %> pending transaction<%= pendingCount > 1 ? 's' : '' %>)
                             </p>
                         <% } %>
@@ -28,25 +28,22 @@
                     </div>
                 </div>
 
-                <div style="margin-bottom: 1.5rem; display: flex; gap: 1rem;">
+                <div class="mb-1 flex flex-gap-1">
                     <a
                         href="/transactions"
-                        class="btn btn-small <%= !statusFilter ? 'active' : '' %>"
-                        style="<%= !statusFilter ? 'background-color: var(--color-fg); color: var(--color-bg);' : '' %>"
+                        class="btn btn-small <%= !statusFilter ? 'btn-active' : '' %>"
                     >
                         All
                     </a>
                     <a
                         href="/transactions?status=pending"
-                        class="btn btn-small <%= statusFilter === 'pending' ? 'active' : '' %>"
-                        style="<%= statusFilter === 'pending' ? 'background-color: var(--color-fg); color: var(--color-bg);' : '' %>"
+                        class="btn btn-small <%= statusFilter === 'pending' ? 'btn-active' : '' %>"
                     >
                         Pending
                     </a>
                     <a
                         href="/transactions?status=validated"
-                        class="btn btn-small <%= statusFilter === 'validated' ? 'active' : '' %>"
-                        style="<%= statusFilter === 'validated' ? 'background-color: var(--color-fg); color: var(--color-bg);' : '' %>"
+                        class="btn btn-small <%= statusFilter === 'validated' ? 'btn-active' : '' %>"
                     >
                         Validated
                     </a>

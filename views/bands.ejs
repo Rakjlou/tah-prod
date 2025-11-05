@@ -7,14 +7,14 @@
     <%- include('partials/navbar') %>
 
     <main class="main-content">
-        <div class="form-container" style="max-width: 900px; width: 100%;">
+        <div class="form-container container-wide">
             <h1 class="form-title">Bands</h1>
             <%- include('partials/messages') %>
 
             <% if (!googleConfigured) { %>
                 <div class="info-box">
                     <p>
-                        Google integration not configured yet. Please configure it in the <a href="/config" style="color: #ffffff; text-decoration: underline;">Config section</a> first.
+                        Google integration not configured yet. Please configure it in the <a href="/config" class="color-fg text-underlined">Config section</a> first.
                     </p>
                 </div>
             <% } else if (!isGoogleAuthenticated) { %>
@@ -70,10 +70,10 @@
                                     </td>
                                     <td><%= new Date(band.created_at).toLocaleDateString() %></td>
                                     <td>
-                                        <form action="/admin/bands/<%= band.id %>/reset-password" method="POST" style="display: inline; margin-right: 0.5rem;">
+                                        <form action="/admin/bands/<%= band.id %>/reset-password" method="POST" class="inline-form mr-half">
                                             <button type="submit" class="btn btn-small">Reset Password</button>
                                         </form>
-                                        <form action="/admin/bands/<%= band.id %>/delete" method="POST" style="display: inline;">
+                                        <form action="/admin/bands/<%= band.id %>/delete" method="POST" class="inline-form">
                                             <button type="submit" class="btn btn-small" onclick="return confirm('Are you sure you want to delete <%= band.name %>? This will delete the band, user account, all transactions, and Google Drive folder. This action cannot be undone.')">Delete</button>
                                         </form>
                                     </td>
@@ -83,21 +83,13 @@
                     </table>
                 </div>
             <% } else { %>
-                <p style="text-align: center; padding: 2rem;">No bands created yet.</p>
+                <p class="text-center padding-2">No bands created yet.</p>
             <% } %>
         </div>
     </main>
 
     <%- include('partials/footer') %>
 
-    <script>
-        document.getElementById('band-form')?.addEventListener('submit', function(e) {
-            const submitBtn = document.getElementById('submit-btn');
-
-            // Disable submit button and change text
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Creating...';
-        });
-    </script>
+    <script src="/js/bands.js"></script>
 </body>
 </html>

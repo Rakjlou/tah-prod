@@ -417,3 +417,297 @@
     font-size: 0.9rem;
     min-width: 150px;
 }
+
+/* Status Badges (with colors for visual clarity) */
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #000;
+    display: inline-block;
+}
+
+.status-badge-pending {
+    background-color: #ffeb3b;
+    color: #000;
+}
+
+.status-badge-validated {
+    background-color: #4caf50;
+    color: #fff;
+}
+
+/* Transaction Detail Page */
+.transaction-detail-container {
+    max-width: 900px;
+    width: 100%;
+}
+
+.preformatted-text {
+    white-space: pre-wrap;
+}
+
+.inline-form {
+    display: inline;
+}
+
+.section-spacing {
+    margin-bottom: 1rem;
+}
+
+.section-spacing-large {
+    margin-bottom: 1.5rem;
+}
+
+.section-top-border {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: var(--border-standard);
+}
+
+.small-section-title {
+    font-size: 1rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+}
+
+/* Qonto Linker Section */
+.qonto-linker-section {
+    margin-top: 2rem;
+    border-top: 1px solid white;
+    padding-top: 2rem;
+}
+
+.qonto-section-title {
+    margin-bottom: 1rem;
+}
+
+.qonto-validation-status {
+    margin-bottom: 1.5rem;
+}
+
+.qonto-margin-left {
+    margin-left: 1rem;
+}
+
+.qonto-linked-transactions {
+    margin-bottom: 1.5rem;
+}
+
+.qonto-small-section-title {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.qonto-partial-amount {
+    color: #888;
+    font-size: 0.9em;
+}
+
+.qonto-unlink-btn {
+    background-color: #f44336;
+}
+
+.qonto-loading,
+.qonto-error {
+    margin-top: 1rem;
+}
+
+.qonto-error {
+    color: #f44336;
+}
+
+.qonto-matches {
+    margin-top: 1.5rem;
+}
+
+.qonto-link-btn {
+    margin-top: 1rem;
+}
+
+.qonto-help-text {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: #888;
+}
+
+.qonto-checkbox-header {
+    width: 50px;
+}
+
+.qonto-row-disabled {
+    opacity: 0.5;
+}
+
+/* Config Page */
+.config-section-title {
+    margin-top: 2rem;
+}
+
+.config-help-text {
+    margin-top: 0.5rem;
+}
+
+.config-info-box {
+    margin-top: 2rem;
+}
+
+.config-form-spacing {
+    margin-top: 1rem;
+}
+
+.config-table-spacing {
+    margin-bottom: 1.5rem;
+}
+
+.hidden {
+    display: none;
+}
+
+/* Direction Icons */
+.direction-match {
+    color: #4caf50;
+}
+
+.direction-mismatch {
+    color: #f44336;
+}
+
+/* Form Radio Group */
+.radio-group {
+    display: flex;
+    gap: 1rem;
+}
+
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.form-textarea {
+    resize: vertical;
+}
+
+.form-help-small {
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+    color: var(--color-fg);
+    opacity: 0.7;
+}
+
+/* Transaction Table Row Highlighting */
+.transaction-row-pending {
+    color: #ffeb3b;
+}
+
+/* Wide Container */
+.container-wide {
+    max-width: 900px;
+    width: 100%;
+}
+
+.container-extra-wide {
+    max-width: 1200px;
+    width: 100%;
+}
+
+.container-full-wide {
+    max-width: 1400px;
+    width: 100%;
+}
+
+/* Text Utilities */
+.text-center {
+    text-align: center;
+}
+
+.text-underlined {
+    text-decoration: underline;
+}
+
+.color-fg {
+    color: var(--color-fg);
+}
+
+.padding-2 {
+    padding: 2rem;
+}
+
+.mb-0 {
+    margin-bottom: 0;
+}
+
+.mb-half {
+    margin-bottom: 0.5rem;
+}
+
+.mb-1 {
+    margin-bottom: 1.5rem;
+}
+
+.mr-half {
+    margin-right: 0.5rem;
+}
+
+/* Flexbox Utilities */
+.flex {
+    display: flex;
+}
+
+.flex-gap-1 {
+    gap: 1rem;
+}
+
+.flex-justify-between {
+    justify-content: space-between;
+}
+
+.flex-align-center {
+    align-items: center;
+}
+
+.flex-align-end {
+    align-items: flex-end;
+}
+
+.flex-wrap {
+    flex-wrap: wrap;
+}
+
+.min-width-200 {
+    min-width: 200px;
+}
+
+.min-width-150 {
+    min-width: 150px;
+}
+
+/* Active State for Buttons/Links */
+.btn-active {
+    background-color: var(--color-fg);
+    color: var(--color-bg);
+}
+
+/* Text Size Utilities */
+.text-large {
+    font-size: 1.2rem;
+}
+
+.text-small {
+    font-size: 0.9rem;
+}
+
+.opacity-80 {
+    opacity: 0.8;
+}
+
+/* Utility Classes */
+.mt-2 {
+    margin-top: 2rem;
+}
