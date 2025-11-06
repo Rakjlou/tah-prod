@@ -3,25 +3,8 @@ const router = express.Router();
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 const { requireBand } = require('../lib/middleware');
-const {
-    getBandByUserId,
-    getTransactionsByBand,
-    getBalanceForBand,
-    getAllCategories,
-    createTransaction,
-    getTransactionById,
-    updateTransaction,
-    deleteTransaction
-} = require('../lib/db');
-const googleAuth = require('../lib/google-auth');
-const { syncTransactionsToSheet } = require('../lib/google-sheets');
-const {
-    getTransactionsFolderId,
-    createTransactionFolder,
-    uploadTransactionDocument,
-    deleteTransactionFolder
-} = require('../lib/google-drive');
-const { addTransactionDocument } = require('../lib/db');
+const transactionService = require('../services/transaction-service');
+const bandService = require('../services/band-service');
 const {
     handleTransactionDetail,
     handleTransactionEdit,
@@ -35,34 +18,17 @@ const {
  * Display band transactions list
  */
 router.get('/transactions', requireBand, async (req, res) => {
-    try {
-        const band = await getBandByUserId(req.session.user.id);
-        if (!band) {
-            return res.status(404).send('Band not found');
-        }
+    const band = await bandService.getBandByUser(req.session.user.id);
+    const statusFilter = req.query.status || null;
+    const { transactions, balance, pendingCount } = await transactionService.getTransactionsForBand(band.id, statusFilter);
 
-        const statusFilter = req.query.status || null;
-        const transactions = await getTransactionsByBand(band.id, statusFilter);
-        const balance = await getBalanceForBand(band.id);
-        const pendingCount = await getTransactionsByBand(band.id, 'pending');
-
-        res.render('transactions', {
-            band,
-            transactions,
-            balance,
-            pendingCount: pendingCount.length,
-            statusFilter
-        });
-    } catch (error) {
-        console.error('Error loading transactions:', error);
-        res.render('transactions', {
-            error: 'Failed to load transactions',
-            transactions: [],
-            balance: 0,
-            pendingCount: 0,
-            statusFilter: null
-        });
-    }
+    res.render('transactions', {
+        band,
+        transactions,
+        balance,
+        pendingCount,
+        statusFilter
+    });
 });
 
 /**
@@ -70,18 +36,9 @@ router.get('/transactions', requireBand, async (req, res) => {
  * Display new transaction form
  */
 router.get('/transactions/new', requireBand, async (req, res) => {
-    try {
-        const band = await getBandByUserId(req.session.user.id);
-        if (!band) {
-            return res.status(404).send('Band not found');
-        }
-
-        const categories = await getAllCategories();
-        res.render('transaction-new', { band, categories });
-    } catch (error) {
-        console.error('Error loading new transaction form:', error);
-        res.status(500).send('Failed to load form');
-    }
+    const band = await bandService.getBandByUser(req.session.user.id);
+    const categories = await bandService.getCategories();
+    res.render('transaction-new', { band, categories });
 });
 
 /**
@@ -90,41 +47,26 @@ router.get('/transactions/new', requireBand, async (req, res) => {
  */
 router.post('/transactions', requireBand, upload.array('documents', 10), async (req, res) => {
     try {
-        const band = await getBandByUserId(req.session.user.id);
-        if (!band) {
-            return res.status(404).send('Band not found');
-        }
-
+        const band = await bandService.getBandByUser(req.session.user.id);
         const { type, amount, category_id, description } = req.body;
 
-        // Create transaction
-        const transactionId = await createTransaction(band.id, type, parseFloat(amount), parseInt(category_id), description);
+        await transactionService.create({
+            bandId: band.id,
+            type,
+            amount,
+            categoryId: category_id,
+            description,
+            bandFolderId: band.folder_id,
+            spreadsheetId: band.accounting_spreadsheet_id,
+            files: req.files
+        });
 
-        // Handle document uploads if any
-        if (req.files && req.files.length > 0) {
-            const authenticatedClient = await googleAuth.getAuthenticatedClient();
-            const transactionsFolderId = await getTransactionsFolderId(authenticatedClient, band.folder_id);
-            const folderId = await createTransactionFolder(authenticatedClient, transactionsFolderId, transactionId, description);
-
-            // Upload each file
-            for (const file of req.files) {
-                const driveFileId = await uploadTransactionDocument(authenticatedClient, folderId, file.buffer, file.originalname);
-                await addTransactionDocument(transactionId, driveFileId, file.originalname);
-            }
-
-            // Update transaction with folder ID
-            await updateTransaction(transactionId, { drive_folder_id: folderId });
-        }
-
-        // Sync to Google Sheets
-        const transactions = await getTransactionsByBand(band.id);
-        const authenticatedClient = await googleAuth.getAuthenticatedClient();
-        await syncTransactionsToSheet(authenticatedClient, band.accounting_spreadsheet_id, transactions);
-
-        res.redirect('/transactions?success=' + encodeURIComponent('Transaction created successfully'));
+        req.flash.success('Transaction created successfully');
+        res.redirect('/transactions');
     } catch (error) {
         console.error('Error creating transaction:', error);
-        res.redirect('/transactions/new?error=' + encodeURIComponent('Failed to create transaction: ' + error.message));
+        req.flash.error(error.userMessage || 'Failed to create transaction');
+        res.redirect('/transactions');
     }
 });
 
@@ -139,27 +81,18 @@ router.get('/transactions/:id', requireBand, handleTransactionDetail);
  * Display transaction edit form
  */
 router.get('/transactions/:id/edit', requireBand, async (req, res) => {
-    try {
-        const band = await getBandByUserId(req.session.user.id);
-        if (!band) {
-            return res.status(404).send('Band not found');
-        }
+    const band = await bandService.getBandByUser(req.session.user.id);
+    const transaction = await transactionService.getById(req.params.id);
 
-        const transaction = await getTransactionById(req.params.id);
-        if (!transaction || transaction.band_id !== band.id) {
-            return res.status(404).send('Transaction not found');
-        }
+    bandService.verifyBandOwnership(band.id, transaction);
 
-        if (transaction.status !== 'pending') {
-            return res.redirect('/transactions?error=' + encodeURIComponent('Cannot edit validated transaction'));
-        }
-
-        const categories = await getAllCategories();
-        res.render('transaction-edit', { band, transaction, categories });
-    } catch (error) {
-        console.error('Error loading transaction edit form:', error);
-        res.status(500).send('Failed to load form');
+    if (transaction.status !== 'pending') {
+        req.flash.error('Cannot edit validated transaction');
+        return res.redirect('/transactions');
     }
+
+    const categories = await bandService.getCategories();
+    res.render('transaction-edit', { band, transaction, categories });
 });
 
 /**
@@ -174,37 +107,20 @@ router.post('/transactions/:id/edit', requireBand, handleTransactionEdit);
  */
 router.post('/transactions/:id/delete', requireBand, async (req, res) => {
     try {
-        const band = await getBandByUserId(req.session.user.id);
-        if (!band) {
-            return res.status(404).send('Band not found');
-        }
+        const band = await bandService.getBandByUser(req.session.user.id);
 
-        const transaction = await getTransactionById(req.params.id);
-        if (!transaction || transaction.band_id !== band.id) {
-            return res.status(404).send('Transaction not found');
-        }
+        await transactionService.delete(
+            req.params.id,
+            band.id,
+            band.accounting_spreadsheet_id
+        );
 
-        if (transaction.status !== 'pending') {
-            return res.redirect('/transactions?error=' + encodeURIComponent('Cannot delete validated transaction'));
-        }
-
-        // Delete folder from Drive if exists
-        if (transaction.drive_folder_id) {
-            const authenticatedClient = await googleAuth.getAuthenticatedClient();
-            await deleteTransactionFolder(authenticatedClient, transaction.drive_folder_id);
-        }
-
-        await deleteTransaction(req.params.id);
-
-        // Sync to Google Sheets
-        const transactions = await getTransactionsByBand(band.id);
-        const authenticatedClient = await googleAuth.getAuthenticatedClient();
-        await syncTransactionsToSheet(authenticatedClient, band.accounting_spreadsheet_id, transactions);
-
-        res.redirect('/transactions?success=' + encodeURIComponent('Transaction deleted successfully'));
+        req.flash.success('Transaction deleted successfully');
+        res.redirect('/transactions');
     } catch (error) {
         console.error('Error deleting transaction:', error);
-        res.redirect('/transactions?error=' + encodeURIComponent('Failed to delete transaction'));
+        req.flash.error(error.userMessage || 'Failed to delete transaction');
+        res.redirect('/transactions');
     }
 });
 
