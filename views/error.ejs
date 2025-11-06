@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <%- include('partials/head', { title: 'Error - Tah Prod' }) %>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <main class="main-content">
+        <div class="form-container">
+            <h1 class="form-title">Error <%= statusCode || 500 %></h1>
+            <div class="error-message">
+                <%= message || 'An error occurred' %>
+            </div>
+            <div style="margin-top: 2rem; text-align: center;">
+                <a href="/" class="btn">Back to home</a>
+            </div>
+        </div>
+    </main>
+
+    <%- include('partials/footer') %>
+</body>
+</html>

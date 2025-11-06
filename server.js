@@ -3,6 +3,7 @@ const session = require('express-session');
 const SQLiteStore = require('connect-sqlite3')(session);
 const path = require('path');
 const { setLocals } = require('./lib/middleware');
+const { flashMiddleware, notFoundHandler, errorHandler } = require('./lib/error-handler');
 
 // Import route modules
 const authRoutes = require('./routes/auth');
@@ -55,6 +56,9 @@ app.use((req, res, next) => {
 // Set common locals for all views
 app.use(setLocals);
 
+// Flash messages middleware
+app.use(flashMiddleware);
+
 // Home route
 app.get('/', (req, res) => {
     res.render('index');
@@ -68,6 +72,12 @@ app.use('/', accountRoutes);
 app.use('/', transactionsRoutes);
 app.use('/', adminTransactionsRoutes);
 app.use('/', qontoRoutes);
+
+// 404 handler
+app.use(notFoundHandler);
+
+// Global error handler (must be last)
+app.use(errorHandler);
 
 // Only start server if this file is run directly (not imported for testing)
 if (require.main === module) {
