@@ -83,13 +83,18 @@ function displayMatches(matches) {
         }
 
         rowClone.querySelector('.qonto-date').textContent = match.settled_at ? new Date(match.settled_at).toLocaleDateString() : '-';
-        rowClone.querySelector('.qonto-amount').textContent = `${match.amount} ${match.currency || 'EUR'}`;
+
+        // Display debit amounts as negative for user clarity
+        const displayAmount = match.side === 'debit' ? `-${match.amount}` : match.amount;
+        rowClone.querySelector('.qonto-amount').textContent = `${displayAmount} ${match.currency || 'EUR'}`;
 
         const availableCell = rowClone.querySelector('.qonto-available');
         if (isFullyAllocated) {
             availableCell.classList.add('fully-allocated');
         }
-        availableCell.textContent = `${available} €${isFullyAllocated ? ' (Full)' : ''}`;
+        // Also display available amount as negative for debits
+        const displayAvailable = match.side === 'debit' ? `-${available}` : available;
+        availableCell.textContent = `${displayAvailable} €${isFullyAllocated ? ' (Full)' : ''}`;
 
         const directionCell = rowClone.querySelector('.qonto-direction');
         const directionIcon = document.createElement('span');
