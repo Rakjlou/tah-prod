@@ -41,13 +41,15 @@ const qontoApiMock = {
         {
             id: 'qonto-tx-1',
             transaction_id: 'tx-1',
-            amount: -150.00,
+            amount: 150.00,
             currency: 'EUR',
+            side: 'debit',
             settled_at: '2025-01-15T10:30:00Z',
             emitted_at: '2025-01-15T10:25:00Z',
             label: 'Equipment Purchase',
             reference: 'REF-001',
             note: 'Sound equipment',
+            operation_type: 'card',
             qonto_web_url: 'https://app.qonto.com/transactions/qonto-tx-1',
             status: 'completed'
         },
@@ -56,24 +58,28 @@ const qontoApiMock = {
             transaction_id: 'tx-2',
             amount: 500.00,
             currency: 'EUR',
+            side: 'credit',
             settled_at: '2025-01-20T14:00:00Z',
             emitted_at: '2025-01-20T13:55:00Z',
             label: 'Concert Payment',
             reference: 'REF-002',
             note: null,
+            operation_type: 'transfer',
             qonto_web_url: 'https://app.qonto.com/transactions/qonto-tx-2',
             status: 'completed'
         },
         {
             id: 'qonto-tx-3',
             transaction_id: 'tx-3',
-            amount: -75.50,
+            amount: 75.50,
             currency: 'EUR',
+            side: 'debit',
             settled_at: '2025-01-25T09:15:00Z',
             emitted_at: '2025-01-25T09:10:00Z',
             label: 'Marketing Campaign',
             reference: null,
             note: 'Social media ads',
+            operation_type: 'card',
             qonto_web_url: 'https://app.qonto.com/transactions/qonto-tx-3',
             status: 'completed'
         }
@@ -262,12 +268,14 @@ describe('Qonto Integration', () => {
             const qontoTransaction = {
                 id: 'qonto-tx-1',
                 transaction_id: 'tx-1',
-                amount: -150.00,
+                amount: 150.00,
                 currency: 'EUR',
+                side: 'debit',
                 settled_at: '2025-01-15T10:30:00Z',
                 label: 'Equipment Purchase',
                 reference: 'REF-001',
                 note: 'Sound equipment',
+                operation_type: 'card',
                 qonto_web_url: 'https://app.qonto.com/transactions/qonto-tx-1'
             };
 
@@ -307,10 +315,12 @@ describe('Qonto Integration', () => {
                     transaction_id: 'tx-2',
                     amount: 500.00,
                     currency: 'EUR',
+                    side: 'credit',
                     settled_at: '2025-01-20T14:00:00Z',
                     label: 'Concert Payment',
                     reference: 'REF-002',
                     note: null,
+                    operation_type: 'transfer',
                     qonto_web_url: 'https://app.qonto.com/transactions/qonto-tx-2'
                 },
                 {
@@ -318,10 +328,12 @@ describe('Qonto Integration', () => {
                     transaction_id: 'tx-3',
                     amount: 75.50,
                     currency: 'EUR',
+                    side: 'credit',
                     settled_at: '2025-01-25T09:15:00Z',
                     label: 'Merchandise Sales',
                     reference: null,
                     note: 'T-shirt sales',
+                    operation_type: 'transfer',
                     qonto_web_url: 'https://app.qonto.com/transactions/qonto-tx-3'
                 }
             ];
@@ -360,12 +372,14 @@ describe('Qonto Integration', () => {
             const qontoTransaction = {
                 id: 'qonto-tx-split',
                 transaction_id: 'tx-split',
-                amount: -150.00,
+                amount: 150.00,
                 currency: 'EUR',
+                side: 'debit',
                 settled_at: '2025-01-15T10:30:00Z',
                 label: 'Split Equipment Purchase',
                 reference: 'REF-SPLIT',
                 note: 'Split between two categories',
+                operation_type: 'card',
                 qonto_web_url: 'https://app.qonto.com/transactions/qonto-tx-split'
             };
 
@@ -487,12 +501,14 @@ describe('Qonto Integration', () => {
             const qontoTransaction = {
                 id: 'qonto-tx-unlink-test',
                 transaction_id: 'tx-unlink-test',
-                amount: -75.50,
+                amount: 75.50,
                 currency: 'EUR',
+                side: 'debit',
                 settled_at: '2025-01-25T09:15:00Z',
                 label: 'Marketing Campaign',
                 reference: 'REF-003',
                 note: 'Social media ads',
+                operation_type: 'card',
                 qonto_web_url: 'https://app.qonto.com/transactions/qonto-tx-unlink-test'
             };
 
@@ -619,32 +635,15 @@ describe('Qonto Integration', () => {
         it('should show link status when searching for Qonto transactions', async () => {
             const agent = await authenticateAs(app, 'admin', 'admin123');
 
-            // First, create a link via the API
-            const qontoTransaction = {
-                id: 'qonto-tx-1',
-                transaction_id: 'tx-1',
-                amount: -150.00,
-                currency: 'EUR',
-                settled_at: '2025-01-15T10:30:00Z',
-                label: 'Equipment Purchase',
-                reference: 'REF-001',
-                note: 'Sound equipment',
-                qonto_web_url: 'https://app.qonto.com/transactions/qonto-tx-1'
-            };
-
-            await agent
-                .post(`/admin/transactions/${transactionId1}/link-qonto`)
-                .send({ qontoTransactions: [qontoTransaction] })
-                .expect(200);
-
-            // Now search from transaction2
+            // Search for Qonto transactions (previous tests have already created links)
             const res = await agent
-                .post(`/admin/transactions/${transactionId2}/search-qonto`)
+                .post(`/admin/transactions/${transactionId1}/search-qonto`)
                 .expect('Content-Type', /json/)
                 .expect(200);
 
             assert.strictEqual(res.body.success, true);
             assert.ok(Array.isArray(res.body.matches));
+            assert.ok(res.body.matches.length > 0, 'Should have some transactions');
 
             // All transactions should have link status fields
             res.body.matches.forEach(match => {
@@ -652,6 +651,10 @@ describe('Qonto Integration', () => {
                 assert.ok(match.hasOwnProperty('linkedTo'));
                 assert.ok(Array.isArray(match.linkedTo));
             });
+
+            // At least one transaction should be linked (from previous tests)
+            const hasLinkedTransaction = res.body.matches.some(match => match.isLinked === true);
+            assert.ok(hasLinkedTransaction, 'At least one transaction should be linked');
         });
     });
 });

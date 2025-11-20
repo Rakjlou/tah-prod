@@ -127,6 +127,42 @@ async function createTables(db) {
             FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE CASCADE
         )`,
 
+        // Qonto organizations table
+        `CREATE TABLE qonto_organizations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            organization_slug TEXT NOT NULL UNIQUE,
+            bank_account_slug TEXT,
+            last_sync_date TEXT,
+            last_sync_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )`,
+
+        // Qonto transactions table
+        `CREATE TABLE qonto_transactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            qonto_id TEXT NOT NULL UNIQUE,
+            qonto_transaction_id TEXT,
+            amount REAL NOT NULL CHECK (amount >= 0),
+            currency TEXT NOT NULL,
+            side TEXT NOT NULL CHECK (side IN ('debit', 'credit')),
+            settled_at TEXT NOT NULL,
+            emitted_at TEXT,
+            label TEXT,
+            reference TEXT,
+            note TEXT,
+            operation_type TEXT,
+            status TEXT NOT NULL,
+            qonto_web_url TEXT,
+            raw_data TEXT,
+            organization_id INTEGER,
+            fetched_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (organization_id) REFERENCES qonto_organizations(id)
+        )`,
+
+        // Qonto transactions indices
+        `CREATE INDEX idx_qonto_transactions_settled_at ON qonto_transactions(settled_at DESC)`,
+        `CREATE INDEX idx_qonto_transactions_qonto_id ON qonto_transactions(qonto_id)`,
+
         // Qonto transaction links table
         `CREATE TABLE qonto_transaction_links (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -140,6 +176,7 @@ async function createTables(db) {
             qonto_reference TEXT,
             qonto_note TEXT,
             qonto_web_url TEXT,
+            allocated_amount REAL,
             linked_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             linked_by INTEGER,
             FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE CASCADE,

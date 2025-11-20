@@ -139,20 +139,37 @@ router.post('/config/categories', requireAdmin, async (req, res) => {
         });
     }
 
-    await createCategory(name, type);
+    // Database operation - catch constraint violations for better UX
+    try {
+        await createCategory(name, type);
 
-    const config = await getAllConfig();
-    const organizationBandId = await configService.getOrganizationBandId();
-    const organizationBand = organizationBandId ? await getBandById(organizationBandId) : null;
-    const categories = await getAllCategories();
+        const config = await getAllConfig();
+        const organizationBandId = await configService.getOrganizationBandId();
+        const organizationBand = organizationBandId ? await getBandById(organizationBandId) : null;
+        const categories = await getAllCategories();
 
-    res.render('config', {
-        success: `Category "${name}" created successfully`,
-        config,
-        organizationBandId,
-        organizationBand,
-        categories
-    });
+        res.render('config', {
+            success: `Category "${name}" created successfully`,
+            config,
+            organizationBandId,
+            organizationBand,
+            categories
+        });
+    } catch (error) {
+        // Handle database constraint errors (e.g., invalid type)
+        const config = await getAllConfig();
+        const organizationBandId = await configService.getOrganizationBandId();
+        const organizationBand = organizationBandId ? await getBandById(organizationBandId) : null;
+        const categories = await getAllCategories();
+
+        return res.render('config', {
+            error: 'Invalid category type. Must be income, expense, or both.',
+            config,
+            organizationBandId,
+            organizationBand,
+            categories
+        });
+    }
 });
 
 /**
