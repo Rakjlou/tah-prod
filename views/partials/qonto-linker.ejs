@@ -36,6 +36,7 @@
     <% if (linkedQontoTransactions && linkedQontoTransactions.length > 0) { %>
         <div class="linked-transactions qonto-linked-transactions">
             <h3 class="qonto-small-section-title">Currently Linked:</h3>
+            <div class="table-wrapper">
             <table class="data-table">
                 <thead>
                     <tr>
@@ -67,6 +68,7 @@
                     <% }); %>
                 </tbody>
             </table>
+            </div>
         </div>
     <% } else { %>
         <p class="section-spacing qonto-partial-amount">No Qonto transactions linked yet.</p>
@@ -99,19 +101,21 @@
 
     <!-- Template for Qonto transaction table -->
     <template id="qonto-table-template">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th class="qonto-checkbox-header"><input type="checkbox" id="select-all-qonto" onclick="toggleSelectAll()"></th>
-                    <th>Date</th>
-                    <th>Available</th>
-                    <th>Counterparty</th>
-                    <th>Reference</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody id="qonto-table-body"></tbody>
-        </table>
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th class="qonto-checkbox-header"><input type="checkbox" id="select-all-qonto" onclick="toggleSelectAll()"></th>
+                        <th>Date</th>
+                        <th>Available</th>
+                        <th>Counterparty</th>
+                        <th>Reference</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="qonto-table-body"></tbody>
+            </table>
+        </div>
         <div class="qonto-help-text">
             <p>Only transactions with matching direction are shown</p>
             <p>Available = Remaining amount that can be allocated</p>

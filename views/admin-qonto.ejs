@@ -19,6 +19,7 @@
             <% if (qontoTransactions.length === 0) { %>
                 <p class="section-spacing">No Qonto transactions in cache. Search for transactions from the transaction detail pages to populate the cache.</p>
             <% } else { %>
+                <div class="table-wrapper">
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -71,6 +72,7 @@
                         <% }); %>
                     </tbody>
                 </table>
+                </div>
             <% } %>
         </div>
     </main>
