@@ -1,0 +1,25 @@
+# Environment files
+.env
+.env.test
+
+# Markdown files (except README.md)
+*.md
+!README.md
+
+# Sublime Text files
+*.sublime-project
+*.sublime-workspace
+
+# Data directory (SQLite databases)
+data/
+
+# Node.js
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
