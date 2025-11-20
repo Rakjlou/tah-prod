@@ -71,8 +71,11 @@ router.post('/admin/transactions/:id/search-qonto', requireAdmin, async (req, re
             return res.status(404).json({ error: 'Transaction not found' });
         }
 
-        const syncResult = await qontoCache.autoSync();
-        console.log('[Qonto Search] Auto-sync:', syncResult.synced ? `Synced ${syncResult.result.synced} new transactions` : 'Using cache (recently synced)');
+        const syncResult = await qontoCache.syncTransactions();
+        const syncMessage = syncResult.synced > 0
+            ? `Synced ${syncResult.synced} new transaction${syncResult.synced === 1 ? '' : 's'}`
+            : 'No new transactions';
+        console.log('[Qonto Search]', syncMessage);
 
         const matches = await qontoCache.getCachedTransactions({ status: 'completed' });
 
@@ -119,10 +122,10 @@ router.post('/admin/transactions/:id/search-qonto', requireAdmin, async (req, re
         res.json({
             success: true,
             matches: enrichedMatches,
-            syncInfo: syncResult.synced ? {
-                synced: syncResult.result.synced,
-                total: syncResult.result.total
-            } : null
+            syncInfo: {
+                synced: syncResult.synced,
+                total: syncResult.total
+            }
         });
     } catch (error) {
         console.error('Error searching Qonto transactions:', error);

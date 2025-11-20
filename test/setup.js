@@ -127,16 +127,6 @@ async function createTables(db) {
             FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE CASCADE
         )`,
 
-        // Qonto organizations table
-        `CREATE TABLE qonto_organizations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            organization_slug TEXT NOT NULL UNIQUE,
-            bank_account_slug TEXT,
-            last_sync_date TEXT,
-            last_sync_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-        )`,
-
         // Qonto transactions table
         `CREATE TABLE qonto_transactions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
