@@ -1,6 +1,6 @@
 <% if (isAdmin) { %>
-<div class="qonto-linker-section">
-    <h2 class="qonto-section-title">Link to Bank Transactions (Qonto)</h2>
+<div class="info-box">
+    <h2 class="section-title">Link to Bank Transactions (Qonto)</h2>
 
     <!-- Validation Status -->
     <div id="validation-status" class="validation-status qonto-validation-status">
@@ -8,13 +8,20 @@
             <strong>Website Transaction:</strong>
             <%= transaction.type === 'expense' ? '-' : '+' %><%= transaction.amount.toFixed(2) %> €
 
+            <%
+                let isValid = false;
+                let linkedTotal = 0;
+                let expectedTotal = 0;
+                let difference = 0;
+
+                if (linkedQontoTransactions && linkedQontoTransactions.length > 0) {
+                    linkedTotal = linkedQontoTransactions.reduce((sum, link) => sum + (link.allocated_amount || link.qonto_amount || 0), 0);
+                    expectedTotal = transaction.type === 'expense' ? -transaction.amount : transaction.amount;
+                    difference = Math.abs(linkedTotal - expectedTotal);
+                    isValid = difference < 0.01;
+                }
+            %>
             <% if (linkedQontoTransactions && linkedQontoTransactions.length > 0) { %>
-                <%
-                    const linkedTotal = linkedQontoTransactions.reduce((sum, link) => sum + (link.allocated_amount || link.qonto_amount || 0), 0);
-                    const expectedTotal = transaction.type === 'expense' ? -transaction.amount : transaction.amount;
-                    const difference = Math.abs(linkedTotal - expectedTotal);
-                    const isValid = difference < 0.01;
-                %>
                 <span class="qonto-margin-left">
                     <strong>Linked Qonto Total:</strong> <%= linkedTotal.toFixed(2) %> €
                 </span>
@@ -65,10 +72,12 @@
         <p class="section-spacing qonto-partial-amount">No Qonto transactions linked yet.</p>
     <% } %>
 
-    <!-- Search button -->
-    <button type="button" class="btn" onclick="searchQontoMatches()" id="search-qonto-btn">
-        Search Qonto Transactions
-    </button>
+    <!-- Search button - only show if not matched or no links yet -->
+    <% if (!isValid) { %>
+        <button type="button" class="btn" onclick="searchQontoMatches()" id="search-qonto-btn">
+            Search Qonto Transactions
+        </button>
+    <% } %>
 
     <!-- Loading indicator -->
     <div id="qonto-loading" class="hidden qonto-loading">
@@ -95,9 +104,7 @@
                 <tr>
                     <th class="qonto-checkbox-header"><input type="checkbox" id="select-all-qonto" onclick="toggleSelectAll()"></th>
                     <th>Date</th>
-                    <th>Amount</th>
                     <th>Available</th>
-                    <th>Direction</th>
                     <th>Counterparty</th>
                     <th>Reference</th>
                     <th>Status</th>
@@ -108,7 +115,6 @@
         <div class="qonto-help-text">
             <p>Only transactions with matching direction are shown</p>
             <p>Available = Remaining amount that can be allocated</p>
-            <p>Grayed out transactions cannot be linked (fully allocated)</p>
         </div>
     </template>
 
@@ -117,9 +123,7 @@
         <tr>
             <td><input type="checkbox" class="qonto-checkbox" data-qonto-id=""></td>
             <td class="qonto-date">-</td>
-            <td class="qonto-amount">0.00 EUR</td>
             <td class="qonto-available">N/A</td>
-            <td class="qonto-direction"></td>
             <td class="qonto-label">-</td>
             <td class="qonto-reference">-</td>
             <td class="qonto-status">completed</td>

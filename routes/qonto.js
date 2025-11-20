@@ -9,6 +9,31 @@ const qontoValidation = require('../lib/qonto-validation');
 const configService = require('../lib/config-service');
 
 /**
+ * GET /admin/qonto
+ * Display Qonto admin panel with all cached transactions
+ */
+router.get('/admin/qonto', requireAdmin, async (req, res) => {
+    try {
+        const qontoTransactions = await qontoDb.getAllQontoTransactionsWithLinks();
+
+        res.render('admin-qonto', {
+            user: req.session.user,
+            qontoTransactions,
+            error: req.session.error,
+            success: req.session.success
+        });
+
+        // Clear flash messages
+        delete req.session.error;
+        delete req.session.success;
+    } catch (error) {
+        console.error('Error loading Qonto admin panel:', error);
+        req.session.error = 'Failed to load Qonto transactions';
+        res.redirect('/admin/transactions');
+    }
+});
+
+/**
  * POST /admin/test-qonto
  * Test Qonto API connection with provided credentials
  */
@@ -112,8 +137,13 @@ router.post('/admin/transactions/:id/search-qonto', requireAdmin, async (req, re
             };
         }));
 
+        // Filter out fully allocated transactions and wrong direction transactions
+        const availableMatches = enrichedMatches.filter(match =>
+            match.directionMatches && !match.isFullyAllocated
+        );
+
         // Sort by settled_at (most recent first)
-        enrichedMatches.sort((a, b) => {
+        availableMatches.sort((a, b) => {
             const dateA = new Date(a.settled_at);
             const dateB = new Date(b.settled_at);
             return dateB - dateA;
@@ -121,7 +151,7 @@ router.post('/admin/transactions/:id/search-qonto', requireAdmin, async (req, re
 
         res.json({
             success: true,
-            matches: enrichedMatches,
+            matches: availableMatches,
             syncInfo: {
                 synced: syncResult.synced,
                 total: syncResult.total

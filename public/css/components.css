@@ -539,6 +539,41 @@
     opacity: 0.5;
 }
 
+/* Qonto Amount Display - Available with full amount below */
+.qonto-available-display {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.qonto-available-primary {
+    font-weight: normal;
+}
+
+.qonto-amount-secondary {
+    color: #888;
+    font-size: 0.85em;
+}
+
+/* Qonto Admin Panel */
+.qonto-linked-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+.qonto-link-badge {
+    color: white;
+    text-decoration: none;
+    border-bottom: 1px solid white;
+}
+
+.qonto-link-badge:hover {
+    background-color: white;
+    color: black;
+}
+
 /* Config Page */
 .config-section-title {
     margin-top: 2rem;

@@ -57,7 +57,6 @@ function displayMatches(matches) {
 
     matches.forEach(match => {
         const isLinked = match.isLinked;
-        const linkedNote = isLinked ? ` (linked to #${match.linkedTo.join(', #')})` : '';
         const isFullyAllocated = match.isFullyAllocated || false;
         const available = match.availableAmount !== undefined ? match.availableAmount.toFixed(2) : 'N/A';
         const directionMatches = match.directionMatches !== undefined ? match.directionMatches : true;
@@ -84,25 +83,32 @@ function displayMatches(matches) {
 
         rowClone.querySelector('.qonto-date').textContent = match.settled_at ? new Date(match.settled_at).toLocaleDateString() : '-';
 
-        // Display debit amounts as negative for user clarity
-        const displayAmount = match.side === 'debit' ? `-${match.amount}` : match.amount;
-        rowClone.querySelector('.qonto-amount').textContent = `${displayAmount} ${match.currency || 'EUR'}`;
-
+        // Format available cell with full amount shown below (smaller, greyed out)
         const availableCell = rowClone.querySelector('.qonto-available');
         if (isFullyAllocated) {
             availableCell.classList.add('fully-allocated');
         }
-        // Also display available amount as negative for debits
+
+        // Display amounts as negative for debits
         const displayAvailable = match.side === 'debit' ? `-${available}` : available;
-        availableCell.textContent = `${displayAvailable} €${isFullyAllocated ? ' (Full)' : ''}`;
+        const displayAmount = match.side === 'debit' ? `-${match.amount}` : match.amount;
 
-        const directionCell = rowClone.querySelector('.qonto-direction');
-        const directionIcon = document.createElement('span');
-        directionIcon.className = directionMatches ? 'direction-match' : 'direction-mismatch';
-        directionIcon.textContent = directionMatches ? '✓' : '✗';
-        directionCell.appendChild(directionIcon);
+        // Only show "out of" if available is different from full amount
+        const showOutOf = Math.abs(parseFloat(available) - parseFloat(match.amount)) > 0.01;
 
-        rowClone.querySelector('.qonto-label').textContent = (match.label || '-') + linkedNote;
+        // Create the two-line display: available on top, full amount below (if different)
+        if (showOutOf) {
+            availableCell.innerHTML = `
+                <div class="qonto-available-primary">${displayAvailable} €${isFullyAllocated ? ' (Full)' : ''}</div>
+                <div class="qonto-amount-secondary">out of ${displayAmount} ${match.currency || 'EUR'}</div>
+            `;
+        } else {
+            availableCell.innerHTML = `
+                <div class="qonto-available-primary">${displayAvailable} €${isFullyAllocated ? ' (Full)' : ''}</div>
+            `;
+        }
+
+        rowClone.querySelector('.qonto-label').textContent = match.label || '-';
         rowClone.querySelector('.qonto-reference').textContent = match.reference || '-';
         rowClone.querySelector('.qonto-status').textContent = match.status || 'completed';
 
@@ -172,26 +178,11 @@ async function linkSelected() {
             return;
         }
 
-        // Show success results
-        let successMsg = '';
-        if (data.linked && data.linked.length > 0) {
-            successMsg = `Successfully linked ${data.linked.length} Qonto transaction(s)!\n\n`;
-        }
-
-        if (data.validation) {
-            successMsg += 'Validation Summary:\n';
-            successMsg += `Website Amount: ${data.validation.websiteAmount} € (${data.validation.websiteType})\n`;
-            successMsg += `Qonto Total: ${data.validation.combinedQontoTotal.toFixed(2)} €\n`;
-            successMsg += `Difference: ${data.validation.difference.toFixed(2)} €\n`;
-            successMsg += data.validation.isAmountMatch ? '✓ Amounts match!' : '⚠ Amounts do not match';
-        }
-
+        // If there were partial errors, show them
         if (data.errors && data.errors.length > 0) {
             const errorMessages = data.errors.map(e => e.message).join('\n');
-            successMsg += `\n\nSome transactions could not be linked:\n${errorMessages}`;
+            alert(`Some transactions could not be linked:\n${errorMessages}`);
         }
-
-        alert(successMsg);
 
         // Reload page to show updated links
         window.location.reload();

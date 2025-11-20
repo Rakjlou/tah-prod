@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <%- include('partials/head', { title: 'Qonto Transactions - Tah Prod' }) %>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <main class="main-content">
+        <div class="form-container container-full-wide">
+            <h1 class="form-title">Qonto Transactions</h1>
+            <%- include('partials/messages') %>
+
+            <div class="info-box">
+                <p><strong>Total cached transactions:</strong> <%= qontoTransactions.length %></p>
+                <p class="qonto-partial-amount">This panel shows all Qonto transactions stored in the local cache.</p>
+            </div>
+
+            <% if (qontoTransactions.length === 0) { %>
+                <p class="section-spacing">No Qonto transactions in cache. Search for transactions from the transaction detail pages to populate the cache.</p>
+            <% } else { %>
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Available</th>
+                            <th>Status</th>
+                            <th>Counterparty</th>
+                            <th>Reference</th>
+                            <th>Linked Transactions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% qontoTransactions.forEach(tx => { %>
+                            <tr>
+                                <td><%= tx.settled_at ? new Date(tx.settled_at).toLocaleDateString() : '-' %></td>
+                                <td>
+                                    <%= tx.side === 'debit' ? '-' : '' %><%= tx.amount %> <%= tx.currency || 'EUR' %>
+                                </td>
+                                <td>
+                                    <div class="qonto-available-display">
+                                        <div class="qonto-available-primary">
+                                            <%= tx.side === 'debit' ? '-' : '' %><%= tx.available.toFixed(2) %> €
+                                            <%= tx.isFullyAllocated ? '(Full)' : '' %>
+                                        </div>
+                                        <% if (tx.totalAllocated > 0) { %>
+                                            <div class="qonto-amount-secondary">
+                                                <%= tx.totalAllocated.toFixed(2) %> € allocated
+                                            </div>
+                                        <% } %>
+                                    </div>
+                                </td>
+                                <td><%= tx.status || 'completed' %></td>
+                                <td><%= tx.label || '-' %></td>
+                                <td><%= tx.reference || '-' %></td>
+                                <td>
+                                    <% if (tx.isLinked && tx.linkedTransactionIds.length > 0) { %>
+                                        <div class="qonto-linked-badges">
+                                            <% tx.linkedTransactionIds.forEach((transactionId, index) => { %>
+                                                <a href="/admin/transactions/<%= transactionId %>" target="_blank" class="qonto-link-badge">
+                                                    #<%= transactionId %>
+                                                </a><% if (index < tx.linkedTransactionIds.length - 1) { %>, <% } %>
+                                            <% }); %>
+                                        </div>
+                                    <% } else { %>
+                                        <span class="qonto-partial-amount">Not linked</span>
+                                    <% } %>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            <% } %>
+        </div>
+    </main>
+
+    <%- include('partials/footer') %>
+</body>
+</html>
