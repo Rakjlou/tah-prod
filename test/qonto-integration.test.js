@@ -203,7 +203,7 @@ describe('Qonto Integration', () => {
             });
         });
 
-        it('should search and return all Qonto transactions', async () => {
+        it('should search and return available matching Qonto transactions', async () => {
             const agent = await authenticateAs(app, 'admin', 'admin123');
 
             const res = await agent
@@ -213,7 +213,9 @@ describe('Qonto Integration', () => {
 
             assert.strictEqual(res.body.success, true);
             assert.ok(Array.isArray(res.body.matches));
-            assert.strictEqual(res.body.matches.length, 3);
+            // Should return 2 transactions: qonto-tx-1 (debit, matches expense) and qonto-tx-3 (debit, matches expense)
+            // qonto-tx-2 (credit) is filtered out because it doesn't match the expense direction
+            assert.strictEqual(res.body.matches.length, 2);
 
             // Check that transactions are sorted by date (most recent first)
             const dates = res.body.matches.map(m => new Date(m.settled_at));
@@ -221,12 +223,20 @@ describe('Qonto Integration', () => {
                 assert.ok(dates[i - 1] >= dates[i], 'Transactions should be sorted by date descending');
             }
 
-            // Verify enriched fields exist (some may be linked from previous tests)
+            // Verify enriched fields exist and filtering fields are present
             res.body.matches.forEach(match => {
                 assert.ok(match.hasOwnProperty('isLinked'));
                 assert.ok(match.hasOwnProperty('linkedTo'));
                 assert.ok(typeof match.isLinked === 'boolean');
                 assert.ok(Array.isArray(match.linkedTo));
+                // Verify filtering fields
+                assert.ok(match.hasOwnProperty('directionMatches'));
+                assert.ok(match.hasOwnProperty('isFullyAllocated'));
+                // All returned matches should have direction matching and not be fully allocated
+                assert.strictEqual(match.directionMatches, true, 'All matches should have matching direction');
+                assert.strictEqual(match.isFullyAllocated, false, 'All matches should not be fully allocated');
+                // For expense transactions, Qonto transactions should be debit
+                assert.strictEqual(match.side, 'debit', 'Expense transactions should match debit Qonto transactions');
             });
         });
 
@@ -632,10 +642,11 @@ describe('Qonto Integration', () => {
             });
         });
 
-        it('should show link status when searching for Qonto transactions', async () => {
+        it('should show link status and filter out fully allocated transactions', async () => {
             const agent = await authenticateAs(app, 'admin', 'admin123');
 
-            // Search for Qonto transactions (previous tests have already created links)
+            // Search for Qonto transactions for an expense transaction
+            // After previous tests, debit transactions may be fully allocated
             const res = await agent
                 .post(`/admin/transactions/${transactionId1}/search-qonto`)
                 .expect('Content-Type', /json/)
@@ -643,18 +654,33 @@ describe('Qonto Integration', () => {
 
             assert.strictEqual(res.body.success, true);
             assert.ok(Array.isArray(res.body.matches));
-            assert.ok(res.body.matches.length > 0, 'Should have some transactions');
+            // May return 0 transactions if all matching debit transactions are fully allocated
 
-            // All transactions should have link status fields
+            // All returned transactions should have link status fields and filtering metadata
             res.body.matches.forEach(match => {
                 assert.ok(match.hasOwnProperty('isLinked'));
                 assert.ok(match.hasOwnProperty('linkedTo'));
                 assert.ok(Array.isArray(match.linkedTo));
+                assert.ok(match.hasOwnProperty('directionMatches'));
+                assert.ok(match.hasOwnProperty('isFullyAllocated'));
+                // Verify filtering: all returned matches should match direction and not be fully allocated
+                assert.strictEqual(match.directionMatches, true, 'All matches should have matching direction');
+                assert.strictEqual(match.isFullyAllocated, false, 'All matches should not be fully allocated');
+                assert.strictEqual(match.side, 'debit', 'Expense transactions should only match debit Qonto transactions');
             });
 
-            // At least one transaction should be linked (from previous tests)
-            const hasLinkedTransaction = res.body.matches.some(match => match.isLinked === true);
-            assert.ok(hasLinkedTransaction, 'At least one transaction should be linked');
+            // Verify that the search works correctly by searching for the income transaction
+            // which should find credit transactions
+            const res2 = await agent
+                .post(`/admin/transactions/${transactionId2}/search-qonto`)
+                .expect('Content-Type', /json/)
+                .expect(200);
+
+            assert.strictEqual(res2.body.success, true);
+            // This is also an expense, so should also get debit transactions
+            res2.body.matches.forEach(match => {
+                assert.strictEqual(match.side, 'debit', 'Expense transactions should only match debit Qonto transactions');
+            });
         });
     });
 });

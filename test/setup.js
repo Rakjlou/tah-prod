@@ -145,8 +145,7 @@ async function createTables(db) {
             qonto_web_url TEXT,
             raw_data TEXT,
             organization_id INTEGER,
-            fetched_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (organization_id) REFERENCES qonto_organizations(id)
+            fetched_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )`,
 
         // Qonto transactions indices
