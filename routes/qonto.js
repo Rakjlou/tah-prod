@@ -6,7 +6,6 @@ const qontoApi = require('../lib/qonto-api');
 const qontoDb = require('../lib/qonto-db');
 const qontoCache = require('../lib/qonto-cache');
 const qontoValidation = require('../lib/qonto-validation');
-const { syncTransactionsToSheet } = require('../lib/google-sheets');
 const configService = require('../lib/config-service');
 
 /**
@@ -222,19 +221,6 @@ router.post('/admin/transactions/:id/link-qonto', requireAdmin, async (req, res)
                     qonto_id: qontoTx.id,
                     message: error.message
                 });
-            }
-        }
-
-        if (linked.length > 0) {
-            try {
-                const band = await getBandById(transaction.band_id);
-                if (band && band.accounting_spreadsheet_id) {
-                    await syncTransactionsToSheet(band.id, band.accounting_spreadsheet_id);
-                    console.log('[Qonto Link] Synced to Google Sheets for band:', band.name);
-                }
-            } catch (syncError) {
-                console.error('[Qonto Link] Failed to sync to Google Sheets:', syncError);
-                // Don't fail the whole operation if sheets sync fails
             }
         }
 
