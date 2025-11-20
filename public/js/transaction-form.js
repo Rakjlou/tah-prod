@@ -17,7 +17,6 @@ function filterCategories() {
     const categorySelect = document.getElementById('category_id');
     const options = categorySelect.querySelectorAll('option');
 
-    // Save current selection
     const currentValue = categorySelect.value;
 
     options.forEach(option => {
@@ -35,24 +34,20 @@ function filterCategories() {
         }
     });
 
-    // Restore selection if it's still visible
     if (currentValue) {
         const selectedOption = categorySelect.querySelector(`option[value="${currentValue}"]`);
         if (selectedOption && selectedOption.style.display !== 'none') {
             categorySelect.value = currentValue;
         } else {
-            // If current selection is now hidden, reset to empty
             categorySelect.value = '';
         }
     }
 }
 
-// Filter on page load
 document.addEventListener('DOMContentLoaded', function() {
     filterCategories();
 });
 
-// Show loading state on submit
 document.getElementById('transaction-form')?.addEventListener('submit', function(e) {
     const submitBtn = document.getElementById('submit-btn');
     submitBtn.disabled = true;

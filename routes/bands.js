@@ -29,7 +29,6 @@ router.get('/auth/google', requireAdmin, async (req, res) => {
         return res.redirect('/bands?error=' + encodeURIComponent('Google OAuth not configured. Please configure it in Config section first.'));
     }
 
-    // Store the referring page to redirect back after authentication
     const returnTo = req.headers.referer || '/bands';
     req.session.oauthReturnTo = returnTo;
 
@@ -45,7 +44,6 @@ router.get('/auth/google', requireAdmin, async (req, res) => {
 router.get('/auth/google/callback', requireAdmin, async (req, res) => {
     const { code, error } = req.query;
 
-    // Get the return URL from session, default to /bands
     const returnTo = req.session.oauthReturnTo || '/bands';
     delete req.session.oauthReturnTo;
 
@@ -99,7 +97,6 @@ router.post('/bands', requireAdmin, async (req, res) => {
 
     const { name, email } = req.body;
 
-    // Simple validation - handle inline
     if (!name || !email) {
         const bands = await getAllBands();
         return res.render('bands', { error: 'Name and email are required', bands });
@@ -112,7 +109,6 @@ router.post('/bands', requireAdmin, async (req, res) => {
         return res.render('bands', { error: 'Google Drive folder not configured', bands });
     }
 
-    // Business logic - let errors bubble to global handler
     const authenticatedClient = await googleAuth.getAuthenticatedClient();
 
     const { folderId, accountingSpreadsheetId, invoicesFolderId } = await createBandStructure(
@@ -122,15 +118,12 @@ router.post('/bands', requireAdmin, async (req, res) => {
         parentFolderId
     );
 
-    // Create band user account
     const temporaryPassword = generateRandomPassword();
     const hashedPassword = await hashPassword(temporaryPassword);
     const userId = await createUser(email, hashedPassword, ROLES.BAND);
 
-    // Create band record linked to the user
     await createBand(name, email, userId, folderId, accountingSpreadsheetId, invoicesFolderId);
 
-    // Send welcome email
     await sendBandWelcomeEmail(email, email, temporaryPassword);
 
     const bands = await getAllBands();
@@ -156,12 +149,10 @@ router.post('/admin/bands/:id/reset-password', requireAdmin, async (req, res) =>
         });
     }
 
-    // Generate new password
     const newPassword = generateRandomPassword();
     const hashedPassword = await hashPassword(newPassword);
     await updateUserPassword(band.user_id, hashedPassword);
 
-    // Send password reset email
     await sendPasswordResetEmail(band.email, newPassword);
 
     const bands = await getAllBands();
@@ -187,7 +178,6 @@ router.post('/admin/bands/:id/delete', requireAdmin, async (req, res) => {
         });
     }
 
-    // Delete Google Drive folder if it exists
     let driveDeleteError = null;
     if (band.folder_id) {
         try {
@@ -204,10 +194,8 @@ router.post('/admin/bands/:id/delete', requireAdmin, async (req, res) => {
         }
     }
 
-    // Invalidate all sessions for this user
     await destroyUserSessions(band.user_id, req.sessionStore);
 
-    // Delete the user (this will cascade delete the band and all transactions)
     await deleteUser(band.user_id);
 
     const bands = await getAllBands();

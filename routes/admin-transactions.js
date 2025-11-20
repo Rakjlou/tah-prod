@@ -45,10 +45,8 @@ router.get('/admin/reconciliation', requireAdmin, async (req, res) => {
     const bandFilter = req.query.band ? parseInt(req.query.band) : null;
     const statusFilter = req.query.status || null;
 
-    // Get all discrepancies
     let discrepancies = await qontoValidation.getDiscrepancies();
 
-    // Apply filters
     if (bandFilter) {
         discrepancies = discrepancies.filter(d => d.transaction.band_id === bandFilter);
     }
@@ -57,10 +55,8 @@ router.get('/admin/reconciliation', requireAdmin, async (req, res) => {
         discrepancies = discrepancies.filter(d => d.transaction.status === statusFilter);
     }
 
-    // Get bands for filter dropdown
     const bands = await getAllBands();
 
-    // Calculate summary stats
     const totalDiscrepancies = discrepancies.length;
     const totalDifference = discrepancies.reduce((sum, d) => sum + Math.abs(d.difference), 0);
     const byStatus = {

@@ -23,7 +23,6 @@ const { generateRandomPassword } = require('../lib/helpers');
  * Display configuration panel
  */
 router.get('/config', requireAdmin, async (req, res) => {
-    // Seed default categories if none exist
     await seedDefaultCategories();
 
     const config = await getAllConfig();
@@ -66,7 +65,6 @@ router.post('/config', requireAdmin, async (req, res) => {
  * Create organization band
  */
 router.post('/config/create-organization', requireAdmin, async (req, res) => {
-    // Check if org already exists
     const existingOrgId = await configService.getOrganizationBandId();
     if (existingOrgId) {
         const config = await getAllConfig();
@@ -81,7 +79,6 @@ router.post('/config/create-organization', requireAdmin, async (req, res) => {
         });
     }
 
-    // Create organization band structure
     const parentFolderId = await configService.getGoogleDriveFolderId();
     const authenticatedClient = await googleAuth.getAuthenticatedClient();
 
@@ -92,15 +89,12 @@ router.post('/config/create-organization', requireAdmin, async (req, res) => {
         parentFolderId
     );
 
-    // Create user account for organization (no login needed, but keeps schema consistent)
     const temporaryPassword = generateRandomPassword();
     const hashedPassword = await hashPassword(temporaryPassword);
     const userId = await createUser('organization@internal', hashedPassword, ROLES.BAND);
 
-    // Create band record
     const bandId = await createBand('Organization', 'organization@internal', userId, folderId, accountingSpreadsheetId, invoicesFolderId);
 
-    // Store organization band ID in config
     await configService.setOrganizationBandId(bandId);
 
     const config = await getAllConfig();
@@ -123,7 +117,6 @@ router.post('/config/create-organization', requireAdmin, async (req, res) => {
 router.post('/config/categories', requireAdmin, async (req, res) => {
     const { name, type } = req.body;
 
-    // Simple validation - handle inline
     if (!name || !type) {
         const config = await getAllConfig();
         const organizationBandId = await configService.getOrganizationBandId();

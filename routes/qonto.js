@@ -72,18 +72,14 @@ router.post('/admin/transactions/:id/search-qonto', requireAdmin, async (req, re
             return res.status(404).json({ error: 'Transaction not found' });
         }
 
-        // Trigger auto-sync (only syncs if >1 hour since last sync)
         const syncResult = await qontoCache.autoSync();
         console.log('[Qonto Search] Auto-sync:', syncResult.synced ? `Synced ${syncResult.result.synced} new transactions` : 'Using cache (recently synced)');
 
-        // Get all cached transactions
         const matches = await qontoCache.getCachedTransactions({ status: 'completed' });
 
-        // Check which ones are already linked
         const qontoIds = matches.map(m => m.qonto_id);
         const linkStatus = await qontoDb.checkMultipleLinks(qontoIds);
 
-        // Compute allocation for each Qonto transaction
         const enrichedMatches = await Promise.all(matches.map(async (match) => {
             const allocation = await qontoValidation.computeQontoAllocation(match.qonto_id);
             const signedAmount = qontoValidation.qontoAmountToSigned(match.amount, match.side);
@@ -155,12 +151,10 @@ router.post('/admin/transactions/:id/link-qonto', requireAdmin, async (req, res)
             return res.status(400).json({ error: 'No Qonto transactions provided' });
         }
 
-        // Get existing links to calculate remaining needed amount
         const existingLinks = await qontoValidation.computeLinkedAmounts(transaction.id);
         const expectedTotal = transaction.type === 'expense' ? -transaction.amount : transaction.amount;
         const remainingNeeded = Math.abs(expectedTotal - existingLinks.total);
 
-        // Prepare data for validation with smart allocation
         let amountLeftToAllocate = remainingNeeded;
         const qontoDataForValidation = qontoTransactions.map(qt => {
             const fullSignedAmount = qontoValidation.qontoAmountToSigned(qt.amount, qt.side);
@@ -192,7 +186,6 @@ router.post('/admin/transactions/:id/link-qonto', requireAdmin, async (req, res)
             };
         });
 
-        // Validate the linking BEFORE creating any links
         const validation = await qontoValidation.validateLinking(transaction.id, qontoDataForValidation);
 
         if (!validation.isValid) {
@@ -205,7 +198,6 @@ router.post('/admin/transactions/:id/link-qonto', requireAdmin, async (req, res)
             });
         }
 
-        // All validations passed, create the links
         const linked = [];
         const errors = [];
 
@@ -214,7 +206,6 @@ router.post('/admin/transactions/:id/link-qonto', requireAdmin, async (req, res)
             const validationData = qontoDataForValidation[i];
 
             try {
-                // Merge original transaction data with calculated allocated_amount (keep it signed)
                 const qontoTxWithAllocation = {
                     ...qontoTx,
                     allocated_amount: validationData.allocated_amount
@@ -234,7 +225,6 @@ router.post('/admin/transactions/:id/link-qonto', requireAdmin, async (req, res)
             }
         }
 
-        // If we successfully linked transactions, sync to Google Sheets
         if (linked.length > 0) {
             try {
                 const band = await getBandById(transaction.band_id);

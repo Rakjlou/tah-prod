@@ -8,14 +8,12 @@ async function searchQontoMatches() {
     const errorDiv = document.getElementById('qonto-error');
     const matchesDiv = document.getElementById('qonto-matches');
 
-    // Reset UI
     searchBtn.disabled = true;
     loadingDiv.classList.remove('hidden');
     errorDiv.classList.add('hidden');
     matchesDiv.classList.add('hidden');
 
     try {
-        // Get transaction ID from URL
         const transactionId = getTransactionIdFromUrl();
         const response = await fetch(`/admin/transactions/${transactionId}/search-qonto`, {
             method: 'POST',
@@ -54,7 +52,6 @@ function displayMatches(matches) {
     const tableTemplate = document.getElementById('qonto-table-template');
     const rowTemplate = document.getElementById('qonto-row-template');
 
-    // Clone the table template
     const tableClone = tableTemplate.content.cloneNode(true);
     const tbody = tableClone.getElementById('qonto-table-body');
 
@@ -65,19 +62,15 @@ function displayMatches(matches) {
         const available = match.availableAmount !== undefined ? match.availableAmount.toFixed(2) : 'N/A';
         const directionMatches = match.directionMatches !== undefined ? match.directionMatches : true;
 
-        // Disable checkbox if fully allocated or direction doesn't match
         const disableCheckbox = isFullyAllocated || !directionMatches;
 
-        // Clone the row template
         const rowClone = rowTemplate.content.cloneNode(true);
         const row = rowClone.querySelector('tr');
 
-        // Apply row class if disabled
         if (disableCheckbox) {
             row.classList.add('qonto-row-disabled');
         }
 
-        // Fill in the row data
         const checkbox = rowClone.querySelector('.qonto-checkbox');
         checkbox.dataset.qontoId = match.id;
         if (disableCheckbox) {
@@ -106,7 +99,6 @@ function displayMatches(matches) {
         tbody.appendChild(rowClone);
     });
 
-    // Clear and append the new table
     contentDiv.innerHTML = '';
     contentDiv.appendChild(tableClone);
 }
@@ -228,7 +220,6 @@ async function unlinkQonto(linkId) {
     }
 }
 
-// Helper function to get transaction ID from URL
 function getTransactionIdFromUrl() {
     const pathParts = window.location.pathname.split('/');
     const transactionsIndex = pathParts.indexOf('transactions');

@@ -33,10 +33,8 @@ async function handleTransactionDetail(req, res) {
             return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
         }
 
-        // Get band information
         const band = await getBandById(transaction.band_id);
 
-        // Verify ownership for bands
         if (!isAdmin) {
             const userBand = await getBandByUserId(req.session.user.id);
             if (!userBand || transaction.band_id !== userBand.id) {
@@ -48,7 +46,6 @@ async function handleTransactionDetail(req, res) {
         const categories = await getAllCategories();
         const documents = await getTransactionDocuments(req.params.id);
 
-        // Fetch linked Qonto transactions if admin
         let linkedQontoTransactions = [];
         if (isAdmin) {
             try {
@@ -93,14 +90,12 @@ async function handleTransactionEdit(req, res) {
             return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
         }
 
-        // Verify ownership for bands
         if (!isAdmin) {
             const band = await getBandByUserId(req.session.user.id);
             if (!band || transaction.band_id !== band.id) {
                 req.session.error = 'Access denied';
                 return res.redirect('/transactions');
             }
-            // Bands can only edit pending transactions
             if (transaction.status !== 'pending') {
                 req.session.error = 'Cannot edit validated transaction';
                 return res.redirect('/transactions/' + req.params.id);
@@ -116,7 +111,6 @@ async function handleTransactionEdit(req, res) {
             description
         };
 
-        // Only admins can change status and transaction_date
         if (isAdmin) {
             if (status) updates.status = status;
             if (clear_date === 'true') {
@@ -128,7 +122,6 @@ async function handleTransactionEdit(req, res) {
 
         await updateTransaction(req.params.id, updates);
 
-        // Sync to Google Sheets
         const band = await getBandById(transaction.band_id);
         if (!band) {
             req.session.error = 'Associated band not found';
@@ -161,7 +154,6 @@ async function handleCreateFolder(req, res) {
             return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
         }
 
-        // Verify ownership for bands
         if (!isAdmin) {
             const band = await getBandByUserId(req.session.user.id);
             if (!band || transaction.band_id !== band.id) {
@@ -191,7 +183,6 @@ async function handleCreateFolder(req, res) {
 
         await updateTransaction(req.params.id, { drive_folder_id: folderId });
 
-        // Sync to Google Sheets to update Documents column
         const transactions = await getTransactionsByBand(transaction.band_id);
         await syncTransactionsToSheet(authenticatedClient, band.accounting_spreadsheet_id, transactions);
 
@@ -218,7 +209,6 @@ async function handleUploadDocuments(req, res) {
             return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
         }
 
-        // Verify ownership for bands
         if (!isAdmin) {
             const band = await getBandByUserId(req.session.user.id);
             if (!band || transaction.band_id !== band.id) {
@@ -239,7 +229,6 @@ async function handleUploadDocuments(req, res) {
         }
         const authenticatedClient = await googleAuth.getAuthenticatedClient();
 
-        // Create folder if it doesn't exist
         let folderId = transaction.drive_folder_id;
         if (!folderId) {
             const transactionsFolderId = await getTransactionsFolderId(authenticatedClient, band.folder_id);
@@ -247,13 +236,11 @@ async function handleUploadDocuments(req, res) {
             await updateTransaction(transaction.id, { drive_folder_id: folderId });
         }
 
-        // Upload each file
         for (const file of req.files) {
             const driveFileId = await uploadTransactionDocument(authenticatedClient, folderId, file.buffer, file.originalname);
             await addTransactionDocument(transaction.id, driveFileId, file.originalname);
         }
 
-        // Sync to Google Sheets (to update Documents column)
         const transactions = await getTransactionsByBand(transaction.band_id);
         await syncTransactionsToSheet(authenticatedClient, band.accounting_spreadsheet_id, transactions);
 
@@ -280,7 +267,6 @@ async function handleDeleteDocument(req, res) {
             return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
         }
 
-        // Verify ownership for bands
         if (!isAdmin) {
             const band = await getBandByUserId(req.session.user.id);
             if (!band || transaction.band_id !== band.id) {
@@ -297,11 +283,9 @@ async function handleDeleteDocument(req, res) {
             return res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
         }
 
-        // Delete from Drive
         const authenticatedClient = await googleAuth.getAuthenticatedClient();
         await deleteFile(authenticatedClient, document.drive_file_id);
 
-        // Delete from DB
         await deleteTransactionDocument(req.params.docId);
 
         req.session.success = 'Document deleted successfully';
