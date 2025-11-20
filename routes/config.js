@@ -57,7 +57,8 @@ router.post('/config', requireAdmin, async (req, res) => {
 
     const categories = await getAllCategories();
 
-    res.render('config', { success: 'Configuration saved successfully', config, organizationBandId, organizationBand, categories });
+    req.flash.success('Configuration saved successfully');
+    res.redirect('/config');
 });
 
 /**
@@ -67,16 +68,8 @@ router.post('/config', requireAdmin, async (req, res) => {
 router.post('/config/create-organization', requireAdmin, async (req, res) => {
     const existingOrgId = await configService.getOrganizationBandId();
     if (existingOrgId) {
-        const config = await getAllConfig();
-        const organizationBand = await getBandById(existingOrgId);
-        const categories = await getAllCategories();
-        return res.render('config', {
-            error: 'Organization band already exists',
-            config,
-            organizationBandId: existingOrgId,
-            organizationBand,
-            categories
-        });
+        req.flash.error('Organization band already exists');
+        return res.redirect('/config');
     }
 
     const parentFolderId = await configService.getGoogleDriveFolderId();
@@ -97,17 +90,8 @@ router.post('/config/create-organization', requireAdmin, async (req, res) => {
 
     await configService.setOrganizationBandId(bandId);
 
-    const config = await getAllConfig();
-    const organizationBand = await getBandById(bandId);
-    const categories = await getAllCategories();
-
-    res.render('config', {
-        success: 'Organization band created successfully',
-        config,
-        organizationBandId: bandId,
-        organizationBand,
-        categories
-    });
+    req.flash.success('Organization band created successfully');
+    res.redirect('/config');
 });
 
 /**
@@ -118,50 +102,20 @@ router.post('/config/categories', requireAdmin, async (req, res) => {
     const { name, type } = req.body;
 
     if (!name || !type) {
-        const config = await getAllConfig();
-        const organizationBandId = await configService.getOrganizationBandId();
-        const organizationBand = organizationBandId ? await getBandById(organizationBandId) : null;
-        const categories = await getAllCategories();
-
-        return res.render('config', {
-            error: 'Category name and type are required',
-            config,
-            organizationBandId,
-            organizationBand,
-            categories
-        });
+        req.flash.error('Category name and type are required');
+        return res.redirect('/config');
     }
 
     // Database operation - catch constraint violations for better UX
     try {
         await createCategory(name, type);
 
-        const config = await getAllConfig();
-        const organizationBandId = await configService.getOrganizationBandId();
-        const organizationBand = organizationBandId ? await getBandById(organizationBandId) : null;
-        const categories = await getAllCategories();
-
-        res.render('config', {
-            success: `Category "${name}" created successfully`,
-            config,
-            organizationBandId,
-            organizationBand,
-            categories
-        });
+        req.flash.success(`Category "${name}" created successfully`);
+        res.redirect('/config');
     } catch (error) {
         // Handle database constraint errors (e.g., invalid type)
-        const config = await getAllConfig();
-        const organizationBandId = await configService.getOrganizationBandId();
-        const organizationBand = organizationBandId ? await getBandById(organizationBandId) : null;
-        const categories = await getAllCategories();
-
-        return res.render('config', {
-            error: 'Invalid category type. Must be income, expense, or both.',
-            config,
-            organizationBandId,
-            organizationBand,
-            categories
-        });
+        req.flash.error('Invalid category type. Must be income, expense, or both.');
+        res.redirect('/config');
     }
 });
 
@@ -173,18 +127,8 @@ router.post('/config/categories/:id/delete', requireAdmin, async (req, res) => {
     const categoryId = req.params.id;
     await deleteCategory(categoryId);
 
-    const config = await getAllConfig();
-    const organizationBandId = await configService.getOrganizationBandId();
-    const organizationBand = organizationBandId ? await getBandById(organizationBandId) : null;
-    const categories = await getAllCategories();
-
-    res.render('config', {
-        success: 'Category deleted successfully',
-        config,
-        organizationBandId,
-        organizationBand,
-        categories
-    });
+    req.flash.success('Category deleted successfully');
+    res.redirect('/config');
 });
 
 module.exports = router;

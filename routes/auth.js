@@ -25,19 +25,22 @@ router.post('/login', async (req, res) => {
         const user = await getUserByUsername(login);
 
         if (!user) {
-            return res.render('login', { error: 'Invalid credentials' });
+            req.flash.error('Invalid credentials');
+            return res.redirect('/login');
         }
 
         const isValid = await verifyPassword(password, user.password);
 
         if (!isValid) {
-            return res.render('login', { error: 'Invalid credentials' });
+            req.flash.error('Invalid credentials');
+            return res.redirect('/login');
         }
 
         req.session.regenerate((err) => {
             if (err) {
                 console.error('Session regeneration error:', err);
-                return res.render('login', { error: 'Login failed' });
+                req.flash.error('Login failed');
+                return res.redirect('/login');
             }
 
             req.session.user = {
@@ -49,14 +52,16 @@ router.post('/login', async (req, res) => {
             req.session.save((err) => {
                 if (err) {
                     console.error('Session save error:', err);
-                    return res.render('login', { error: 'Login failed' });
+                    req.flash.error('Login failed');
+                    return res.redirect('/login');
                 }
                 res.redirect('/');
             });
         });
     } catch (error) {
         console.error('Login error:', error);
-        res.render('login', { error: 'An error occurred' });
+        req.flash.error('An error occurred');
+        res.redirect('/login');
     }
 });
 

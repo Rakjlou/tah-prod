@@ -26,7 +26,8 @@ router.get('/auth/google', requireAdmin, async (req, res) => {
     const googleAuthConfig = await configService.getGoogleOAuth();
 
     if (!googleAuthConfig) {
-        return res.redirect('/bands?error=' + encodeURIComponent('Google OAuth not configured. Please configure it in Config section first.'));
+        req.flash.error('Google OAuth not configured. Please configure it in Config section first.');
+        return res.redirect('/bands');
     }
 
     const returnTo = req.headers.referer || '/bands';
@@ -48,17 +49,20 @@ router.get('/auth/google/callback', requireAdmin, async (req, res) => {
     delete req.session.oauthReturnTo;
 
     if (error) {
-        return res.redirect(returnTo + '?error=' + encodeURIComponent('Google authentication cancelled'));
+        req.flash.error('Google authentication cancelled');
+        return res.redirect(returnTo);
     }
 
     if (!code) {
-        return res.redirect(returnTo + '?error=' + encodeURIComponent('No authorization code received'));
+        req.flash.error('No authorization code received');
+        return res.redirect(returnTo);
     }
 
     const googleOAuthConfig = await configService.getGoogleOAuth();
 
     if (!googleOAuthConfig) {
-        return res.redirect(returnTo + '?error=' + encodeURIComponent('Google OAuth not configured'));
+        req.flash.error('Google OAuth not configured');
+        return res.redirect(returnTo);
     }
 
     const oauthClient = getOAuthClient(googleOAuthConfig);
@@ -69,7 +73,8 @@ router.get('/auth/google/callback', requireAdmin, async (req, res) => {
         await googleAuth.storeRefreshToken(tokens.refresh_token);
     }
 
-    res.redirect(returnTo + '?success=' + encodeURIComponent('Google authentication successful'));
+    req.flash.success('Google authentication successful');
+    res.redirect(returnTo);
 });
 
 /**
@@ -88,25 +93,22 @@ router.get('/bands', requireAdmin, async (req, res) => {
 router.post('/bands', requireAdmin, async (req, res) => {
     // Check if Google authenticated
     if (!await googleAuth.isAuthenticated()) {
-        const bands = await getAllBands();
-        return res.render('bands', {
-            error: 'Please authenticate with Google first',
-            bands
-        });
+        req.flash.error('Please authenticate with Google first');
+        return res.redirect('/bands');
     }
 
     const { name, email } = req.body;
 
     if (!name || !email) {
-        const bands = await getAllBands();
-        return res.render('bands', { error: 'Name and email are required', bands });
+        req.flash.error('Name and email are required');
+        return res.redirect('/bands');
     }
 
     const parentFolderId = await configService.getGoogleDriveFolderId();
 
     if (!parentFolderId) {
-        const bands = await getAllBands();
-        return res.render('bands', { error: 'Google Drive folder not configured', bands });
+        req.flash.error('Google Drive folder not configured');
+        return res.redirect('/bands');
     }
 
     const authenticatedClient = await googleAuth.getAuthenticatedClient();
@@ -126,11 +128,8 @@ router.post('/bands', requireAdmin, async (req, res) => {
 
     await sendBandWelcomeEmail(email, email, temporaryPassword);
 
-    const bands = await getAllBands();
-    res.render('bands', {
-        success: `Band "${name}" created successfully! Username: ${email} | Password: ${temporaryPassword}`,
-        bands
-    });
+    req.flash.success(`Band "${name}" created successfully! Username: ${email} | Password: ${temporaryPassword}`);
+    res.redirect('/bands');
 });
 
 /**
@@ -142,11 +141,8 @@ router.post('/admin/bands/:id/reset-password', requireAdmin, async (req, res) =>
     const band = await getBandById(bandId);
 
     if (!band) {
-        const bands = await getAllBands();
-        return res.render('bands', {
-            error: 'Band not found',
-            bands
-        });
+        req.flash.error('Band not found');
+        return res.redirect('/bands');
     }
 
     const newPassword = generateRandomPassword();
@@ -155,11 +151,8 @@ router.post('/admin/bands/:id/reset-password', requireAdmin, async (req, res) =>
 
     await sendPasswordResetEmail(band.email, newPassword);
 
-    const bands = await getAllBands();
-    res.render('bands', {
-        success: `Password reset for "${band.name}". New password: ${newPassword}`,
-        bands
-    });
+    req.flash.success(`Password reset for "${band.name}". New password: ${newPassword}`);
+    res.redirect('/bands');
 });
 
 /**
@@ -171,11 +164,8 @@ router.post('/admin/bands/:id/delete', requireAdmin, async (req, res) => {
     const band = await getBandById(bandId);
 
     if (!band) {
-        const bands = await getAllBands();
-        return res.render('bands', {
-            error: 'Band not found',
-            bands
-        });
+        req.flash.error('Band not found');
+        return res.redirect('/bands');
     }
 
     let driveDeleteError = null;
@@ -198,15 +188,12 @@ router.post('/admin/bands/:id/delete', requireAdmin, async (req, res) => {
 
     await deleteUser(band.user_id);
 
-    const bands = await getAllBands();
     const successMessage = driveDeleteError
         ? `Band "${band.name}" has been deleted (Warning: Google Drive folder could not be deleted: ${driveDeleteError})`
         : `Band "${band.name}" has been deleted`;
 
-    res.render('bands', {
-        success: successMessage,
-        bands
-    });
+    req.flash.success(successMessage);
+    res.redirect('/bands');
 });
 
 module.exports = router;

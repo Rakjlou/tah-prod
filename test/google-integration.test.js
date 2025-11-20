@@ -72,9 +72,11 @@ describe('Google Drive & Sheets Integration', () => {
                     name: 'Google Test Band',
                     email: 'googletest@test.local' // test.local skips sharing
                 })
-                .expect(200);
+                .expect(302);
 
-            assert.ok(res.text.includes('created successfully'));
+            // Follow redirect and verify success message
+            const followUpRes = await adminAgent.get('/bands').expect(200);
+            assert.ok(followUpRes.text.includes('created successfully'));
 
             // Get the band from database
             const band = await new Promise((resolve, reject) => {
@@ -173,7 +175,7 @@ describe('Google Drive & Sheets Integration', () => {
                     name: 'Docs Test Band',
                     email: 'docstest@test.local'
                 })
-                .expect(200);
+                .expect(302);
 
             const band = await new Promise((resolve, reject) => {
                 db.get(
@@ -396,7 +398,7 @@ describe('Google Drive & Sheets Integration', () => {
                     name: 'Sheets Sync Band',
                     email: 'sheetsync@test.local'
                 })
-                .expect(200);
+                .expect(302);
 
             const band = await new Promise((resolve, reject) => {
                 db.get(

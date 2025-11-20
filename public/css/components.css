@@ -161,6 +161,17 @@
     letter-spacing: var(--spacing-letter);
 }
 
+.warning-message {
+    padding: 1rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--color-warning);
+    background-color: var(--color-bg);
+    color: var(--color-warning);
+    text-align: center;
+    font-size: 0.9rem;
+    letter-spacing: var(--spacing-letter);
+}
+
 /* Info Box */
 .info-box {
     background: var(--color-accent);
@@ -325,15 +336,6 @@
     color: #f44336;
     font-size: 0.75rem;
     letter-spacing: var(--spacing-letter);
-}
-
-.success-message {
-    padding: 2rem;
-    border: var(--border-standard);
-    text-align: center;
-    color: #4caf50;
-    font-size: 1.1rem;
-    margin: 2rem 0;
 }
 
 /* Validation Badges */

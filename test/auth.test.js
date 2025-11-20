@@ -50,21 +50,39 @@ describe('Authentication & Authorization', () => {
         });
 
         it('should reject invalid credentials', async () => {
-            const res = await request(app)
+            const agent = request.agent(app);
+
+            // POST login with invalid credentials - should redirect
+            await agent
                 .post('/login')
                 .type('form')
                 .send({ login: 'admin', password: 'wrongpassword' })
-                .expect(200); // Renders login page with error
+                .expect(302) // Redirects to /login
+                .expect('Location', '/login');
+
+            // GET /login to see the flash message
+            const res = await agent
+                .get('/login')
+                .expect(200);
 
             assert.ok(res.text.includes('Invalid credentials'));
         });
 
         it('should reject non-existent user', async () => {
-            const res = await request(app)
+            const agent = request.agent(app);
+
+            // POST login with non-existent user - should redirect
+            await agent
                 .post('/login')
                 .type('form')
                 .send({ login: 'nonexistent', password: 'password' })
-                .expect(200); // Renders login page with error
+                .expect(302) // Redirects to /login
+                .expect('Location', '/login');
+
+            // GET /login to see the flash message
+            const res = await agent
+                .get('/login')
+                .expect(200);
 
             assert.ok(res.text.includes('Invalid credentials'));
         });

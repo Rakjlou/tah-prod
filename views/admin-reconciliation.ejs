@@ -9,9 +9,7 @@
     <div class="container">
         <h1>Qonto Reconciliation Dashboard</h1>
 
-        <% if (typeof error !== 'undefined' && error) { %>
-            <p class="error"><%= error %></p>
-        <% } %>
+        <%- include('partials/messages') %>
 
         <!-- Summary Stats -->
         <div class="reconciliation-stats">

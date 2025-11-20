@@ -19,7 +19,8 @@ router.get('/account', requireBand, async (req, res) => {
         res.render('account', { band });
     } catch (error) {
         console.error('Error loading account:', error);
-        res.render('account', { error: 'Failed to load account' });
+        req.flash.error('Failed to load account');
+        res.redirect('/account');
     }
 });
 
@@ -30,22 +31,20 @@ router.get('/account', requireBand, async (req, res) => {
 router.post('/account/password', requireBand, async (req, res) => {
     const { currentPassword, newPassword, confirmPassword } = req.body;
 
-    const renderWithBand = async (data) => {
-        const band = await getBandByUserId(req.session.user.id);
-        return res.render('account', { band, ...data });
-    };
-
     try {
         if (!currentPassword || !newPassword || !confirmPassword) {
-            return renderWithBand({ error: 'All fields are required' });
+            req.flash.error('All fields are required');
+            return res.redirect('/account');
         }
 
         if (newPassword !== confirmPassword) {
-            return renderWithBand({ error: 'New passwords do not match' });
+            req.flash.error('New passwords do not match');
+            return res.redirect('/account');
         }
 
         if (newPassword.length < 6) {
-            return renderWithBand({ error: 'Password must be at least 6 characters' });
+            req.flash.error('Password must be at least 6 characters');
+            return res.redirect('/account');
         }
 
         // Verify current password
@@ -53,17 +52,20 @@ router.post('/account/password', requireBand, async (req, res) => {
         const isValid = await verifyPassword(currentPassword, user.password);
 
         if (!isValid) {
-            return renderWithBand({ error: 'Current password is incorrect' });
+            req.flash.error('Current password is incorrect');
+            return res.redirect('/account');
         }
 
         // Update password
         const hashedPassword = await hashPassword(newPassword);
         await updateUserPassword(req.session.user.id, hashedPassword);
 
-        return renderWithBand({ success: 'Password changed successfully' });
+        req.flash.success('Password changed successfully');
+        res.redirect('/account');
     } catch (error) {
         console.error('Error changing password:', error);
-        return renderWithBand({ error: 'Failed to change password' });
+        req.flash.error('Failed to change password');
+        res.redirect('/account');
     }
 });
 

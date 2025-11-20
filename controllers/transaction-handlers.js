@@ -29,7 +29,7 @@ async function handleTransactionDetail(req, res) {
         const transaction = await getTransactionById(req.params.id);
 
         if (!transaction) {
-            req.session.error = 'Transaction not found';
+            req.flash.error('Transaction not found');
             return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
         }
 
@@ -38,7 +38,7 @@ async function handleTransactionDetail(req, res) {
         if (!isAdmin) {
             const userBand = await getBandByUserId(req.session.user.id);
             if (!userBand || transaction.band_id !== userBand.id) {
-                req.session.error = 'Access denied';
+                req.flash.error('Access denied');
                 return res.redirect('/transactions');
             }
         }
@@ -71,7 +71,7 @@ async function handleTransactionDetail(req, res) {
         });
     } catch (error) {
         console.error('Error loading transaction details:', error);
-        req.session.error = 'Failed to load transaction details';
+        req.flash.error('Failed to load transaction details');
         const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
         res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
     }
@@ -86,18 +86,18 @@ async function handleTransactionEdit(req, res) {
         const transaction = await getTransactionById(req.params.id);
 
         if (!transaction) {
-            req.session.error = 'Transaction not found';
+            req.flash.error('Transaction not found');
             return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
         }
 
         if (!isAdmin) {
             const band = await getBandByUserId(req.session.user.id);
             if (!band || transaction.band_id !== band.id) {
-                req.session.error = 'Access denied';
+                req.flash.error('Access denied');
                 return res.redirect('/transactions');
             }
             if (transaction.status !== 'pending') {
-                req.session.error = 'Cannot edit validated transaction';
+                req.flash.error('Cannot edit validated transaction');
                 return res.redirect('/transactions/' + req.params.id);
             }
         }
@@ -124,18 +124,18 @@ async function handleTransactionEdit(req, res) {
 
         const band = await getBandById(transaction.band_id);
         if (!band) {
-            req.session.error = 'Associated band not found';
+            req.flash.error('Associated band not found');
             return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
         }
         const transactions = await getTransactionsByBand(transaction.band_id);
         const authenticatedClient = await googleAuth.getAuthenticatedClient();
         await syncTransactionsToSheet(authenticatedClient, band.accounting_spreadsheet_id, transactions);
 
-        req.session.success = 'Transaction updated successfully';
+        req.flash.success('Transaction updated successfully');
         res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
     } catch (error) {
         console.error('Error updating transaction:', error);
-        req.session.error = 'Failed to update transaction';
+        req.flash.error('Failed to update transaction');
         const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
         res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
     }
@@ -150,26 +150,26 @@ async function handleCreateFolder(req, res) {
         const transaction = await getTransactionById(req.params.id);
 
         if (!transaction) {
-            req.session.error = 'Transaction not found';
+            req.flash.error('Transaction not found');
             return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
         }
 
         if (!isAdmin) {
             const band = await getBandByUserId(req.session.user.id);
             if (!band || transaction.band_id !== band.id) {
-                req.session.error = 'Access denied';
+                req.flash.error('Access denied');
                 return res.redirect('/transactions');
             }
         }
 
         if (transaction.drive_folder_id) {
-            req.session.error = 'Folder already exists';
+            req.flash.error('Folder already exists');
             return res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
         }
 
         const band = await getBandById(transaction.band_id);
         if (!band) {
-            req.session.error = 'Associated band not found';
+            req.flash.error('Associated band not found');
             return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
         }
         const authenticatedClient = await googleAuth.getAuthenticatedClient();
@@ -186,11 +186,11 @@ async function handleCreateFolder(req, res) {
         const transactions = await getTransactionsByBand(transaction.band_id);
         await syncTransactionsToSheet(authenticatedClient, band.accounting_spreadsheet_id, transactions);
 
-        req.session.success = 'Documents folder created successfully';
+        req.flash.success('Documents folder created successfully');
         res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
     } catch (error) {
         console.error('Error creating folder:', error);
-        req.session.error = 'Failed to create documents folder';
+        req.flash.error('Failed to create documents folder');
         const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
         res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
     }
@@ -205,26 +205,26 @@ async function handleUploadDocuments(req, res) {
         const transaction = await getTransactionById(req.params.id);
 
         if (!transaction) {
-            req.session.error = 'Transaction not found';
+            req.flash.error('Transaction not found');
             return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
         }
 
         if (!isAdmin) {
             const band = await getBandByUserId(req.session.user.id);
             if (!band || transaction.band_id !== band.id) {
-                req.session.error = 'Access denied';
+                req.flash.error('Access denied');
                 return res.redirect('/transactions');
             }
         }
 
         if (!req.files || req.files.length === 0) {
-            req.session.error = 'No files selected';
+            req.flash.error('No files selected');
             return res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
         }
 
         const band = await getBandById(transaction.band_id);
         if (!band) {
-            req.session.error = 'Associated band not found';
+            req.flash.error('Associated band not found');
             return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
         }
         const authenticatedClient = await googleAuth.getAuthenticatedClient();
@@ -244,11 +244,11 @@ async function handleUploadDocuments(req, res) {
         const transactions = await getTransactionsByBand(transaction.band_id);
         await syncTransactionsToSheet(authenticatedClient, band.accounting_spreadsheet_id, transactions);
 
-        req.session.success = `${req.files.length} document(s) uploaded successfully`;
+        req.flash.success(`${req.files.length} document(s) uploaded successfully`);
         res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
     } catch (error) {
         console.error('Error uploading documents:', error);
-        req.session.error = 'Failed to upload documents';
+        req.flash.error('Failed to upload documents');
         const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
         res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
     }
@@ -263,14 +263,14 @@ async function handleDeleteDocument(req, res) {
         const transaction = await getTransactionById(req.params.id);
 
         if (!transaction) {
-            req.session.error = 'Transaction not found';
+            req.flash.error('Transaction not found');
             return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
         }
 
         if (!isAdmin) {
             const band = await getBandByUserId(req.session.user.id);
             if (!band || transaction.band_id !== band.id) {
-                req.session.error = 'Access denied';
+                req.flash.error('Access denied');
                 return res.redirect('/transactions');
             }
         }
@@ -279,7 +279,7 @@ async function handleDeleteDocument(req, res) {
         const document = documents.find(d => d.id === parseInt(req.params.docId));
 
         if (!document) {
-            req.session.error = 'Document not found';
+            req.flash.error('Document not found');
             return res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
         }
 
@@ -288,11 +288,11 @@ async function handleDeleteDocument(req, res) {
 
         await deleteTransactionDocument(req.params.docId);
 
-        req.session.success = 'Document deleted successfully';
+        req.flash.success('Document deleted successfully');
         res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
     } catch (error) {
         console.error('Error deleting document:', error);
-        req.session.error = 'Failed to delete document';
+        req.flash.error('Failed to delete document');
         const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
         res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
     }

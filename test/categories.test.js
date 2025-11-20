@@ -44,14 +44,21 @@ describe('Transaction Categories', () => {
 
     describe('Create Category', () => {
         it('should allow admin to create a category', async () => {
-            const res = await adminAgent
+            // Create category - should redirect
+            await adminAgent
                 .post('/config/categories')
                 .type('form')
                 .send({
                     name: 'Travel',
                     type: 'expense'
                 })
-                .expect(200); // Renders config page with success message
+                .expect(302) // Redirects to /config
+                .expect('Location', '/config');
+
+            // GET /config to see the flash message
+            const res = await adminAgent
+                .get('/config')
+                .expect(200);
 
             // Verify success message is shown
             assert.ok(res.text.includes('created successfully'));
@@ -84,18 +91,25 @@ describe('Transaction Categories', () => {
         });
 
         it('should reject invalid category type', async () => {
-            const res = await adminAgent
+            // Try to create with invalid type - should redirect
+            await adminAgent
                 .post('/config/categories')
                 .type('form')
                 .send({
                     name: 'Invalid Type Category',
                     type: 'invalid'
                 })
-                .expect(200); // Renders config page with error
+                .expect(302) // Redirects to /config
+                .expect('Location', '/config');
+
+            // GET /config to see the flash error message
+            const res = await adminAgent
+                .get('/config')
+                .expect(200);
 
             // Verify error message is shown (SQLite will reject invalid CHECK constraint)
             // The route will catch the error and render with error message
-            assert.ok(res.text.includes('config') || res.text.includes('error'));
+            assert.ok(res.text.includes('config') || res.text.includes('error') || res.text.includes('failed'));
         });
     });
 
@@ -113,9 +127,16 @@ describe('Transaction Categories', () => {
                 );
             });
 
-            const res = await adminAgent
+            // Delete category - should redirect
+            await adminAgent
                 .post(`/config/categories/${categoryId}/delete`)
-                .expect(200); // Renders config page with success message
+                .expect(302) // Redirects to /config
+                .expect('Location', '/config');
+
+            // GET /config to see the flash message
+            const res = await adminAgent
+                .get('/config')
+                .expect(200);
 
             // Verify success message is shown
             assert.ok(res.text.includes('deleted successfully'));

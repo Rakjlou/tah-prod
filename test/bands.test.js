@@ -57,10 +57,11 @@ describe('Band Management - Admin Operations', () => {
                     name: 'New Test Band',
                     email: 'newband@test.local' // Test email - skips Google Drive sharing
                 })
-                .expect(200); // Renders bands page with success message
+                .expect(302); // Redirects to bands page with flash message
 
-            // Verify success message is shown
-            assert.ok(res.text.includes('created successfully'));
+            // Follow redirect and verify success message is shown
+            const followUpRes = await adminAgent.get('/bands').expect(200);
+            assert.ok(followUpRes.text.includes('created successfully'));
 
             // Verify band was created
             const band = await new Promise((resolve, reject) => {
@@ -96,9 +97,11 @@ describe('Band Management - Admin Operations', () => {
             // Now delete the band (cleanup + test delete functionality)
             const deleteRes = await adminAgent
                 .post(`/admin/bands/${band.id}/delete`)
-                .expect(200);
+                .expect(302);
 
-            assert.ok(deleteRes.text.includes('deleted'));
+            // Follow redirect and verify delete message is shown
+            const deleteFollowUpRes = await adminAgent.get('/bands').expect(200);
+            assert.ok(deleteFollowUpRes.text.includes('deleted'));
 
             // Verify band was deleted from database
             const deletedBand = await new Promise((resolve, reject) => {
@@ -131,11 +134,18 @@ describe('Band Management - Admin Operations', () => {
         it('should allow admin to reset band password', async () => {
             const newPassword = 'newSecurePassword123';
 
-            const res = await adminAgent
+            // Reset password - should redirect
+            await adminAgent
                 .post(`/admin/bands/${testData.bands.band1Id}/reset-password`)
                 .type('form')
                 .send({ new_password: newPassword })
-                .expect(200); // Renders bands page with success message
+                .expect(302) // Redirects to /bands
+                .expect('Location', '/bands');
+
+            // GET /bands to see the flash message
+            const res = await adminAgent
+                .get('/bands')
+                .expect(200);
 
             // Verify success message is shown (contains the random generated password)
             assert.ok(res.text.includes('Password reset'));
@@ -178,9 +188,16 @@ describe('Band Management - Admin Operations', () => {
                 );
             });
 
-            const res = await adminAgent
+            // Delete band - should redirect
+            await adminAgent
                 .post(`/admin/bands/${bandId}/delete`)
-                .expect(200); // Renders bands page with success message
+                .expect(302) // Redirects to /bands
+                .expect('Location', '/bands');
+
+            // GET /bands to see the flash message
+            const res = await adminAgent
+                .get('/bands')
+                .expect(200);
 
             // Verify success message is shown
             assert.ok(res.text.includes('deleted'));
