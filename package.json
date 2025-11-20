@@ -9,7 +9,8 @@
         "test:integration": "NODE_ENV=test node --test test/google-integration.test.js",
         "start": "node --env-file=.env server.js",
         "local": "node server.js",
-        "install-db": "node --env-file=.env install.js"
+        "install-db": "node --env-file=.env install.js",
+        "postinstall": "test -d data || npm run install-db"
     },
     "author": "Noé Sierra Velasquez",
     "license": "ISC",
