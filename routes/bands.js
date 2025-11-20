@@ -113,23 +113,40 @@ router.post('/bands', requireAdmin, async (req, res) => {
 
     const authenticatedClient = await googleAuth.getAuthenticatedClient();
 
-    const { folderId, accountingSpreadsheetId, invoicesFolderId } = await createBandStructure(
-        authenticatedClient,
-        name,
-        email,
-        parentFolderId
-    );
+    try {
+        const { folderId, accountingSpreadsheetId, invoicesFolderId } = await createBandStructure(
+            authenticatedClient,
+            name,
+            email,
+            parentFolderId
+        );
 
-    const temporaryPassword = generateRandomPassword();
-    const hashedPassword = await hashPassword(temporaryPassword);
-    const userId = await createUser(email, hashedPassword, ROLES.BAND);
+        const temporaryPassword = generateRandomPassword();
+        const hashedPassword = await hashPassword(temporaryPassword);
+        const userId = await createUser(email, hashedPassword, ROLES.BAND);
 
-    await createBand(name, email, userId, folderId, accountingSpreadsheetId, invoicesFolderId);
+        await createBand(name, email, userId, folderId, accountingSpreadsheetId, invoicesFolderId);
 
-    await sendBandWelcomeEmail(email, email, temporaryPassword);
+        await sendBandWelcomeEmail(email, email, temporaryPassword);
 
-    req.flash.success(`Band "${name}" created successfully! Username: ${email} | Password: ${temporaryPassword}`);
-    res.redirect('/bands');
+        req.flash.success(`Band "${name}" created successfully! Username: ${email} | Password: ${temporaryPassword}`);
+        res.redirect('/bands');
+    } catch (error) {
+        console.error('Error creating band:', error);
+
+        // Extract meaningful error message from Google API errors
+        let errorMessage = 'Failed to create band';
+
+        if (error.code === 403 && error.cause?.message) {
+            // Google API permission/sharing error with user-friendly message
+            errorMessage = error.cause.message;
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+
+        req.flash.error(errorMessage);
+        res.redirect('/bands');
+    }
 });
 
 /**
