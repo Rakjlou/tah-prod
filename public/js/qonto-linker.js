@@ -62,7 +62,12 @@ function displayMatches(matches) {
         const available = match.availableAmount !== undefined ? match.availableAmount.toFixed(2) : 'N/A';
         const directionMatches = match.directionMatches !== undefined ? match.directionMatches : true;
 
-        const disableCheckbox = isFullyAllocated || !directionMatches;
+        // Skip transactions with wrong direction - don't display them at all
+        if (!directionMatches) {
+            return;
+        }
+
+        const disableCheckbox = isFullyAllocated;
 
         const rowClone = rowTemplate.content.cloneNode(true);
         const row = rowClone.querySelector('tr');
