@@ -36,9 +36,9 @@ describe('Transaction Categories', () => {
                 .get('/config')
                 .expect(200);
 
-            assert.ok(res.text.includes('Merchandise'));
-            assert.ok(res.text.includes('Concerts'));
-            assert.ok(res.text.includes('Equipment'));
+            assert.ok(res.text.includes('Merchandising'));
+            assert.ok(res.text.includes('Gig'));
+            assert.ok(res.text.includes('Gear'));
         });
     });
 
@@ -49,7 +49,7 @@ describe('Transaction Categories', () => {
                 .post('/config/categories')
                 .type('form')
                 .send({
-                    name: 'Travel',
+                    name: 'Accommodation',
                     type: 'expense'
                 })
                 .expect(302) // Redirects to /config
@@ -67,7 +67,7 @@ describe('Transaction Categories', () => {
             const category = await new Promise((resolve, reject) => {
                 db.get(
                     'SELECT * FROM transaction_categories WHERE name = ?',
-                    ['Travel'],
+                    ['Accommodation'],
                     (err, row) => {
                         if (err) return reject(err);
                         resolve(row);
@@ -158,14 +158,14 @@ describe('Transaction Categories', () => {
 
         it('should NOT allow band to delete categories', async () => {
             await band1Agent
-                .post(`/config/categories/${testData.categories.equipment}/delete`)
+                .post(`/config/categories/${testData.categories.gear}/delete`)
                 .expect(403);
 
             // Verify category still exists
             const category = await new Promise((resolve, reject) => {
                 db.get(
                     'SELECT * FROM transaction_categories WHERE id = ?',
-                    [testData.categories.equipment],
+                    [testData.categories.gear],
                     (err, row) => {
                         if (err) return reject(err);
                         resolve(row);

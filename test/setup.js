@@ -203,11 +203,14 @@ async function seedTestData(db) {
 
     // Create default categories
     const categoryIds = {
-        merchandise: await createTestCategory(db, 'Merchandise', 'income'),
-        concerts: await createTestCategory(db, 'Concerts', 'income'),
-        equipment: await createTestCategory(db, 'Equipment', 'expense'),
+        gear: await createTestCategory(db, 'Gear', 'expense'),
+        travel: await createTestCategory(db, 'Travel', 'expense'),
         marketing: await createTestCategory(db, 'Marketing', 'expense'),
-        miscellaneous: await createTestCategory(db, 'Miscellaneous', 'both')
+        studio: await createTestCategory(db, 'Studio', 'expense'),
+        musicRevenue: await createTestCategory(db, 'Music revenue', 'income'),
+        merchandising: await createTestCategory(db, 'Merchandising', 'both'),
+        gig: await createTestCategory(db, 'Gig', 'both'),
+        other: await createTestCategory(db, 'Other', 'both')
     };
 
     return {

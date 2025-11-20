@@ -197,7 +197,7 @@ describe('Qonto Integration', () => {
             transactionId = await createTestTransaction(db, testData.bands.band1Id, {
                 type: 'expense',
                 amount: 150.00,
-                category_id: testData.categories.equipment,
+                category_id: testData.categories.gear,
                 description: 'Equipment Purchase',
                 transaction_date: '2025-01-15'
             });
@@ -266,7 +266,7 @@ describe('Qonto Integration', () => {
             transactionId = await createTestTransaction(db, testData.bands.band1Id, {
                 type: 'expense',
                 amount: 150.00,
-                category_id: testData.categories.equipment,
+                category_id: testData.categories.gear,
                 description: 'Equipment Purchase',
                 transaction_date: '2025-01-15'
             });
@@ -314,7 +314,7 @@ describe('Qonto Integration', () => {
             const txId = await createTestTransaction(db, testData.bands.band1Id, {
                 type: 'income',
                 amount: 575.50,
-                category_id: testData.categories.concerts,
+                category_id: testData.categories.gig,
                 description: 'Concert and merchandise',
                 transaction_date: '2025-01-20'
             });
@@ -366,7 +366,7 @@ describe('Qonto Integration', () => {
             const txId1 = await createTestTransaction(db, testData.bands.band1Id, {
                 type: 'expense',
                 amount: 50.00,
-                category_id: testData.categories.equipment,
+                category_id: testData.categories.gear,
                 description: 'Part 1 of split payment',
                 transaction_date: '2025-01-15'
             });
@@ -374,7 +374,7 @@ describe('Qonto Integration', () => {
             const txId2 = await createTestTransaction(db, testData.bands.band1Id, {
                 type: 'expense',
                 amount: 100.00,
-                category_id: testData.categories.equipment,
+                category_id: testData.categories.gear,
                 description: 'Part 2 of split payment',
                 transaction_date: '2025-01-15'
             });
@@ -566,7 +566,7 @@ describe('Qonto Integration', () => {
             transactionId = await createTestTransaction(db, testData.bands.band1Id, {
                 type: 'expense',
                 amount: 150.00,
-                category_id: testData.categories.equipment,
+                category_id: testData.categories.gear,
                 description: 'Equipment with Qonto link',
                 transaction_date: '2025-01-15'
             });
@@ -628,7 +628,7 @@ describe('Qonto Integration', () => {
             transactionId1 = await createTestTransaction(db, testData.bands.band1Id, {
                 type: 'expense',
                 amount: 150.00,
-                category_id: testData.categories.equipment,
+                category_id: testData.categories.gear,
                 description: 'Transaction 1',
                 transaction_date: '2025-01-15'
             });

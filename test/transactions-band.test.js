@@ -60,7 +60,7 @@ describe('Transactions - Band Operations', () => {
                 .post('/transactions')
                 .field('type', 'income')
                 .field('amount', '250.00')
-                .field('category_id', testData.categories.concerts)
+                .field('category_id', testData.categories.gig)
                 .field('description', 'Concert Revenue')
                 .field('transaction_date', '2025-01-20')
                 .expect(302);
@@ -90,7 +90,7 @@ describe('Transactions - Band Operations', () => {
                 .post('/transactions')
                 .field('type', 'invalid')
                 .field('amount', '100')
-                .field('category_id', testData.categories.equipment)
+                .field('category_id', testData.categories.gear)
                 .field('description', 'Invalid Type')
                 .field('transaction_date', '2025-01-20')
                 .expect(302); // Should redirect with error
@@ -101,7 +101,7 @@ describe('Transactions - Band Operations', () => {
                 .post('/transactions')
                 .field('type', 'expense')
                 .field('amount', '-50')
-                .field('category_id', testData.categories.equipment)
+                .field('category_id', testData.categories.gear)
                 .field('description', 'Negative Amount')
                 .field('transaction_date', '2025-01-20')
                 .expect(302); // Should redirect with error
@@ -122,7 +122,7 @@ describe('Transactions - Band Operations', () => {
                 .send({
                     type: 'expense',
                     amount: '150.00',
-                    category_id: testData.categories.equipment,
+                    category_id: testData.categories.gear,
                     description: 'Updated Description',
                     transaction_date: '2025-01-25'
                 })
@@ -145,7 +145,7 @@ describe('Transactions - Band Operations', () => {
                 .send({
                     type: 'expense',
                     amount: '200.00',
-                    category_id: testData.categories.equipment,
+                    category_id: testData.categories.gear,
                     description: 'Attempting to edit validated',
                     transaction_date: '2025-01-25'
                 })

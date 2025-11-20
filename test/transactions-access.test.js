@@ -71,7 +71,7 @@ describe('Transactions - Cross-Band Access Control', () => {
                 .send({
                     type: 'expense',
                     amount: '999.99',
-                    category_id: testData.categories.equipment,
+                    category_id: testData.categories.gear,
                     description: 'Attempting to hijack band2 transaction',
                     transaction_date: '2025-01-01'
                 })
@@ -92,7 +92,7 @@ describe('Transactions - Cross-Band Access Control', () => {
                 .send({
                     type: 'income',
                     amount: '888.88',
-                    category_id: testData.categories.concerts,
+                    category_id: testData.categories.gig,
                     description: 'Attempting to hijack band1 transaction',
                     transaction_date: '2025-01-01'
                 })

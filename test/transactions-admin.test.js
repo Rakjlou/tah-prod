@@ -58,7 +58,7 @@ describe('Transactions - Admin Operations', () => {
                 .send({
                     type: 'expense',
                     amount: '200.00',
-                    category_id: testData.categories.equipment,
+                    category_id: testData.categories.gear,
                     description: 'Admin Updated Pending',
                     transaction_date: '2025-01-30'
                 })
@@ -82,7 +82,7 @@ describe('Transactions - Admin Operations', () => {
                 .send({
                     type: 'income',
                     amount: '400.00',
-                    category_id: testData.categories.concerts,
+                    category_id: testData.categories.gig,
                     description: 'Admin Updated Validated',
                     transaction_date: '2025-02-01'
                 })
@@ -105,7 +105,7 @@ describe('Transactions - Admin Operations', () => {
                 .send({
                     type: 'expense',
                     amount: '100.00',
-                    category_id: testData.categories.equipment,
+                    category_id: testData.categories.gear,
                     description: 'Status Change Test',
                     status: 'validated',
                     transaction_date: '2025-02-05'
@@ -128,7 +128,7 @@ describe('Transactions - Admin Operations', () => {
                 .send({
                     type: 'expense',
                     amount: '100.00',
-                    category_id: testData.categories.equipment,
+                    category_id: testData.categories.gear,
                     description: 'Clear Date Test',
                     clear_date: 'true'
                 })

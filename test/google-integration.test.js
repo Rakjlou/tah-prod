@@ -434,7 +434,7 @@ describe('Google Drive & Sheets Integration', () => {
                 .send({
                     type: 'income',
                     amount: '500.00',
-                    category_id: testData.categories.concerts,
+                    category_id: testData.categories.gig,
                     description: 'Sheets Sync Test Income',
                     transaction_date: '2025-01-15'
                 })
