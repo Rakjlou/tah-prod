@@ -5,9 +5,15 @@
             <% if (user) { %>
                 <% if (hasRole(ROLES.ADMIN)) { %>
                     <a href="/bands" class="nav-link">Bands</a>
-                    <a href="/admin/transactions" class="nav-link">Transactions</a>
-                    <a href="/admin/qonto" class="nav-link">Qonto</a>
-                    <a href="/admin/reconciliation" class="nav-link">Reconciliation</a>
+                    <%
+                    const adminDropdownItems = [
+                        { name: 'Transactions', href: '/admin/transactions' },
+                        { name: 'Qonto', href: '/admin/qonto' },
+                        { name: 'Reconciliation', href: '/admin/reconciliation' }
+                    ];
+                    const dropdownCurrentPath = typeof req !== 'undefined' ? req.path : '';
+                    %>
+                    <%- include('nav-dropdown', { items: adminDropdownItems, currentPath: dropdownCurrentPath }) %>
                     <a href="/config" class="nav-link">Config</a>
                 <% } else if (hasRole(ROLES.BAND)) { %>
                     <a href="/transactions" class="nav-link">Transactions</a>
@@ -20,3 +26,4 @@
         </div>
     </div>
 </nav>
+<script src="/js/nav-dropdown.js"></script>

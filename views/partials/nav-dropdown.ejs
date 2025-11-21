@@ -1,0 +1,42 @@
+<%
+// Nav Dropdown Partial
+//
+// Usage:
+// include('partials/nav-dropdown', {
+//     items: [
+//         { name: 'Transactions', href: '/admin/transactions' },
+//         { name: 'Qonto', href: '/admin/qonto' },
+//         { name: 'Reconciliation', href: '/admin/reconciliation' }
+//     ],
+//     currentPath: req.path
+// })
+//
+// The component will automatically highlight the active item
+// and display its name as the button text.
+
+// Find the active item
+// Debug: console.log for development
+// console.log('Current path:', currentPath);
+// console.log('Items:', items);
+const activeItem = items.find(item => item.href === currentPath) || items[0];
+const activeIndex = items.indexOf(activeItem);
+// console.log('Active item:', activeItem);
+%>
+
+<div class="nav-dropdown">
+    <div class="nav-dropdown-button">
+        <span class="nav-dropdown-arrow nav-dropdown-arrow-left" data-arrow="left">&lt;</span>
+        <span class="nav-dropdown-text"><%= activeItem.name %></span>
+        <span class="nav-dropdown-arrow nav-dropdown-arrow-right" data-arrow="right">&gt;</span>
+    </div>
+    <div class="nav-dropdown-menu">
+        <% items.forEach((item, index) => { %>
+            <a
+                href="<%= item.href %>"
+                class="nav-dropdown-item <%= index === activeIndex ? 'active' : '' %>"
+            >
+                <%= item.name %>
+            </a>
+        <% }) %>
+    </div>
+</div>
