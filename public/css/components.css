@@ -204,6 +204,7 @@
     cursor: pointer;
     transition: all 0.2s ease;
     width: 100%;
+    text-decoration: none;
 }
 
 .btn:hover {
@@ -278,7 +279,7 @@
     margin-bottom: 0;
 }
 
-.info-box a {
+.info-box a:not(.btn) {
     color: var(--color-fg);
     text-decoration: underline;
 }
@@ -816,8 +817,10 @@
 
 /* Active State for Buttons/Links */
 .btn-active {
-    background-color: var(--color-fg);
-    color: var(--color-bg);
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    border: var(--border-standard);
+    text-decoration: underline;
 }
 
 /* Text Size Utilities */
