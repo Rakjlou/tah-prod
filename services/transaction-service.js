@@ -70,10 +70,11 @@ class TransactionService {
      * @param {string} data.bandFolderId - Band's folder ID in Google Drive
      * @param {string} data.spreadsheetId - Band's spreadsheet ID
      * @param {Array} data.files - Uploaded files (optional)
+     * @param {string} data.transactionDate - Transaction date (optional)
      * @returns {Promise<number>} Created transaction ID
      */
     async create(data) {
-        const { bandId, type, amount, categoryId, description, bandFolderId, spreadsheetId, files } = data;
+        const { bandId, type, amount, categoryId, description, bandFolderId, spreadsheetId, files, transactionDate } = data;
 
         // Validate input
         if (!['income', 'expense'].includes(type)) {
@@ -84,8 +85,8 @@ class TransactionService {
             throw new ValidationError('Invalid amount');
         }
 
-        // Create transaction
-        const transactionId = await createTransaction(bandId, type, parseFloat(amount), parseInt(categoryId), description);
+        // Create transaction (transactionDate can be null)
+        const transactionId = await createTransaction(bandId, type, parseFloat(amount), parseInt(categoryId), description, transactionDate || null);
 
         // Handle document uploads if any
         if (files && files.length > 0) {
@@ -127,7 +128,7 @@ class TransactionService {
             );
         }
 
-        const { type, amount, categoryId, description, spreadsheetId } = data;
+        const { type, amount, categoryId, description, spreadsheetId, transactionDate, clearDate } = data;
 
         // Prepare update data
         const updates = {};
@@ -135,6 +136,13 @@ class TransactionService {
         if (amount) updates.amount = parseFloat(amount);
         if (categoryId) updates.category_id = parseInt(categoryId);
         if (description !== undefined) updates.description = description;
+
+        // Handle transaction date (clear_date checkbox takes precedence)
+        if (clearDate) {
+            updates.transaction_date = null;
+        } else if (transactionDate !== undefined) {
+            updates.transaction_date = transactionDate || null;
+        }
 
         await updateTransaction(transactionId, updates);
 

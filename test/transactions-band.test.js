@@ -83,6 +83,33 @@ describe('Transactions - Band Operations', () => {
             assert.strictEqual(dbRes.type, 'income');
             assert.strictEqual(dbRes.amount, 250);
             assert.strictEqual(dbRes.status, 'pending');
+            assert.strictEqual(dbRes.transaction_date, '2025-01-20');
+        });
+
+        it('should create a transaction without a date (date is optional)', async () => {
+            const res = await band1Agent
+                .post('/transactions')
+                .field('type', 'expense')
+                .field('amount', '75.00')
+                .field('category_id', testData.categories.gear)
+                .field('description', 'No Date Transaction')
+                .expect(302);
+
+            assert.ok(res.headers.location.includes('/transactions'));
+
+            const dbRes = await new Promise((resolve, reject) => {
+                db.get(
+                    'SELECT * FROM transactions WHERE description = ? AND band_id = ?',
+                    ['No Date Transaction', testData.bands.band1Id],
+                    (err, row) => {
+                        if (err) return reject(err);
+                        resolve(row);
+                    }
+                );
+            });
+
+            assert.ok(dbRes);
+            assert.strictEqual(dbRes.transaction_date, null);
         });
 
         it('should reject invalid transaction type', async () => {
@@ -131,6 +158,31 @@ describe('Transactions - Band Operations', () => {
             const updated = await getTestTransaction(db, txId);
             assert.strictEqual(updated.description, 'Updated Description');
             assert.strictEqual(updated.amount, 150);
+            assert.strictEqual(updated.transaction_date, '2025-01-25');
+        });
+
+        it('should allow band to clear transaction date', async () => {
+            const txId = await createTestTransaction(db, testData.bands.band1Id, {
+                description: 'Has Date To Clear',
+                amount: 100,
+                status: 'pending',
+                transaction_date: '2025-01-01'
+            });
+
+            await band1Agent
+                .post(`/transactions/${txId}/edit`)
+                .type('form')
+                .send({
+                    type: 'expense',
+                    amount: '100.00',
+                    category_id: testData.categories.gear,
+                    description: 'Has Date To Clear',
+                    clear_date: 'true'
+                })
+                .expect(302);
+
+            const updated = await getTestTransaction(db, txId);
+            assert.strictEqual(updated.transaction_date, null);
         });
 
         it('should NOT allow band to edit validated transaction', async () => {

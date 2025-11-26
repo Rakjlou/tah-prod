@@ -111,13 +111,17 @@ async function handleTransactionEdit(req, res) {
             description
         };
 
-        if (isAdmin) {
-            if (status) updates.status = status;
-            if (clear_date === 'true') {
-                updates.transaction_date = null;
-            } else if (transaction_date) {
-                updates.transaction_date = transaction_date;
-            }
+        // Admins can change status
+        if (isAdmin && status) {
+            updates.status = status;
+        }
+
+        // Both bands (for pending) and admins can edit transaction_date
+        // Bands can only reach here if transaction is pending (checked above)
+        if (clear_date === 'true') {
+            updates.transaction_date = null;
+        } else if (transaction_date !== undefined) {
+            updates.transaction_date = transaction_date || null;
         }
 
         await updateTransaction(req.params.id, updates);

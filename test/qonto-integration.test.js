@@ -683,4 +683,222 @@ describe('Qonto Integration', () => {
             });
         });
     });
+
+    describe('Auto-Validation on Amount Match', () => {
+        it('should auto-validate pending transaction when amounts match', async () => {
+            const agent = await authenticateAs(app, 'admin', 'admin123');
+
+            // Create a pending transaction with no date
+            const txId = await createTestTransaction(db, testData.bands.band1Id, {
+                type: 'expense',
+                amount: 200.00,
+                category_id: testData.categories.gear,
+                description: 'Auto-validate test',
+                status: 'pending',
+                transaction_date: null
+            });
+
+            const qontoTransaction = {
+                id: 'qonto-tx-autovalidate',
+                transaction_id: 'tx-autovalidate',
+                amount: 200.00,
+                currency: 'EUR',
+                side: 'debit',
+                settled_at: '2025-02-10T10:30:00Z',
+                label: 'Equipment Purchase',
+                reference: 'REF-AUTO',
+                note: 'Auto-validated',
+                operation_type: 'card',
+                qonto_web_url: 'https://app.qonto.com/transactions/qonto-tx-autovalidate'
+            };
+
+            const res = await agent
+                .post(`/admin/transactions/${txId}/link-qonto`)
+                .send({ qontoTransactions: [qontoTransaction] })
+                .expect('Content-Type', /json/)
+                .expect(200);
+
+            assert.strictEqual(res.body.success, true);
+            assert.strictEqual(res.body.validation.isAmountMatch, true);
+
+            // Verify transaction is now validated
+            const tx = await new Promise((resolve, reject) => {
+                db.get('SELECT * FROM transactions WHERE id = ?', [txId], (err, row) => {
+                    if (err) return reject(err);
+                    resolve(row);
+                });
+            });
+
+            assert.strictEqual(tx.status, 'validated');
+            assert.ok(tx.validated_by);
+            assert.ok(tx.validated_at);
+            // Date should be set from Qonto settled_at
+            assert.strictEqual(tx.transaction_date, '2025-02-10T10:30:00Z');
+        });
+
+        it('should NOT override existing date when auto-validating', async () => {
+            const agent = await authenticateAs(app, 'admin', 'admin123');
+
+            // Create a pending transaction WITH a date already set
+            const txId = await createTestTransaction(db, testData.bands.band1Id, {
+                type: 'expense',
+                amount: 300.00,
+                category_id: testData.categories.gear,
+                description: 'Keep existing date test',
+                status: 'pending',
+                transaction_date: '2025-01-01'
+            });
+
+            const qontoTransaction = {
+                id: 'qonto-tx-keep-date',
+                transaction_id: 'tx-keep-date',
+                amount: 300.00,
+                currency: 'EUR',
+                side: 'debit',
+                settled_at: '2025-02-15T10:30:00Z',
+                label: 'Equipment Purchase',
+                reference: 'REF-KEEP',
+                note: 'Should keep original date',
+                operation_type: 'card',
+                qonto_web_url: 'https://app.qonto.com/transactions/qonto-tx-keep-date'
+            };
+
+            const res = await agent
+                .post(`/admin/transactions/${txId}/link-qonto`)
+                .send({ qontoTransactions: [qontoTransaction] })
+                .expect('Content-Type', /json/)
+                .expect(200);
+
+            assert.strictEqual(res.body.success, true);
+            assert.strictEqual(res.body.validation.isAmountMatch, true);
+
+            // Verify original date is preserved
+            const tx = await new Promise((resolve, reject) => {
+                db.get('SELECT * FROM transactions WHERE id = ?', [txId], (err, row) => {
+                    if (err) return reject(err);
+                    resolve(row);
+                });
+            });
+
+            assert.strictEqual(tx.status, 'validated');
+            assert.strictEqual(tx.transaction_date, '2025-01-01');
+        });
+
+        it('should NOT auto-validate already validated transaction', async () => {
+            const agent = await authenticateAs(app, 'admin', 'admin123');
+
+            // Create a validated transaction
+            const txId = await createTestTransaction(db, testData.bands.band1Id, {
+                type: 'expense',
+                amount: 400.00,
+                category_id: testData.categories.gear,
+                description: 'Already validated test',
+                status: 'validated',
+                transaction_date: '2025-01-05'
+            });
+
+            // Store original validated_at
+            const originalTx = await new Promise((resolve, reject) => {
+                db.get('SELECT * FROM transactions WHERE id = ?', [txId], (err, row) => {
+                    if (err) return reject(err);
+                    resolve(row);
+                });
+            });
+
+            const qontoTransaction = {
+                id: 'qonto-tx-already-validated',
+                transaction_id: 'tx-already-validated',
+                amount: 400.00,
+                currency: 'EUR',
+                side: 'debit',
+                settled_at: '2025-02-20T10:30:00Z',
+                label: 'Already validated',
+                reference: 'REF-VALIDATED',
+                note: 'Should not re-validate',
+                operation_type: 'card',
+                qonto_web_url: 'https://app.qonto.com/transactions/qonto-tx-already-validated'
+            };
+
+            const res = await agent
+                .post(`/admin/transactions/${txId}/link-qonto`)
+                .send({ qontoTransactions: [qontoTransaction] })
+                .expect('Content-Type', /json/)
+                .expect(200);
+
+            assert.strictEqual(res.body.success, true);
+
+            // Verify validated_at was NOT changed
+            const tx = await new Promise((resolve, reject) => {
+                db.get('SELECT * FROM transactions WHERE id = ?', [txId], (err, row) => {
+                    if (err) return reject(err);
+                    resolve(row);
+                });
+            });
+
+            assert.strictEqual(tx.status, 'validated');
+            // validated_at should remain unchanged (null in test data)
+            assert.strictEqual(tx.validated_at, originalTx.validated_at);
+        });
+
+        it('should use latest Qonto settled_at when multiple transactions linked', async () => {
+            const agent = await authenticateAs(app, 'admin', 'admin123');
+
+            // Create a pending transaction with no date
+            const txId = await createTestTransaction(db, testData.bands.band1Id, {
+                type: 'income',
+                amount: 1000.00,
+                category_id: testData.categories.gig,
+                description: 'Multi-link date test',
+                status: 'pending',
+                transaction_date: null
+            });
+
+            const qontoTransactions = [
+                {
+                    id: 'qonto-tx-multi-1',
+                    transaction_id: 'tx-multi-1',
+                    amount: 400.00,
+                    currency: 'EUR',
+                    side: 'credit',
+                    settled_at: '2025-02-01T10:00:00Z',
+                    label: 'Payment 1',
+                    reference: 'REF-M1',
+                    operation_type: 'transfer',
+                    qonto_web_url: 'https://app.qonto.com/transactions/qonto-tx-multi-1'
+                },
+                {
+                    id: 'qonto-tx-multi-2',
+                    transaction_id: 'tx-multi-2',
+                    amount: 600.00,
+                    currency: 'EUR',
+                    side: 'credit',
+                    settled_at: '2025-02-15T14:00:00Z', // This is the latest
+                    label: 'Payment 2',
+                    reference: 'REF-M2',
+                    operation_type: 'transfer',
+                    qonto_web_url: 'https://app.qonto.com/transactions/qonto-tx-multi-2'
+                }
+            ];
+
+            const res = await agent
+                .post(`/admin/transactions/${txId}/link-qonto`)
+                .send({ qontoTransactions })
+                .expect('Content-Type', /json/)
+                .expect(200);
+
+            assert.strictEqual(res.body.success, true);
+            assert.strictEqual(res.body.validation.isAmountMatch, true);
+
+            // Verify transaction date is set to the latest Qonto settled_at
+            const tx = await new Promise((resolve, reject) => {
+                db.get('SELECT * FROM transactions WHERE id = ?', [txId], (err, row) => {
+                    if (err) return reject(err);
+                    resolve(row);
+                });
+            });
+
+            assert.strictEqual(tx.status, 'validated');
+            assert.strictEqual(tx.transaction_date, '2025-02-15T14:00:00Z');
+        });
+    });
 });

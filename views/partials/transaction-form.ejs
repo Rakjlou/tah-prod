@@ -59,7 +59,7 @@
         >
     </div>
 
-    <% if (typeof canEditStatus !== 'undefined' && canEditStatus && transaction) { %>
+    <% if (typeof canEditDate !== 'undefined' && canEditDate) { %>
         <div class="form-group">
             <label for="transaction_date" class="form-label">Transaction Date</label>
             <input
@@ -67,7 +67,7 @@
                 id="transaction_date"
                 name="transaction_date"
                 class="form-input"
-                value="<%= transaction.transaction_date ? new Date(transaction.transaction_date).toISOString().split('T')[0] : '' %>"
+                value="<%= transaction && transaction.transaction_date ? new Date(transaction.transaction_date).toISOString().split('T')[0] : '' %>"
             >
             <label class="checkbox-label">
                 <input type="checkbox" id="clear_date" name="clear_date" value="true" onchange="toggleTransactionDate()">

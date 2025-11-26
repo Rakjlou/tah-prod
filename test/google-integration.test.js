@@ -458,9 +458,8 @@ describe('Google Drive & Sheets Integration', () => {
 
             assert.ok(syncedRow, 'Transaction should appear in Google Sheet');
             assert.strictEqual(syncedRow[0], 'FALSE', 'Validated should be FALSE for pending transactions');
-            // Even though transaction_date is sent, the server ignores it for band-created transactions
-            // So the date will be empty until admin validates it
-            assert.strictEqual(syncedRow[1], '', 'Date should be empty (server ignores transaction_date from bands)');
+            // Bands can now set transaction_date when creating transactions
+            assert.strictEqual(syncedRow[1], '15/01/2025', 'Date should be set by band');
             // Amount is formatted as currency by Google Sheets (e.g., '500,00 €' in European locale)
             assert.ok(syncedRow[5].includes('500'), 'Amount should contain 500 (formatted as currency)');
         });

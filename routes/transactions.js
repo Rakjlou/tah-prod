@@ -48,7 +48,7 @@ router.get('/transactions/new', requireBand, async (req, res) => {
 router.post('/transactions', requireBand, upload.array('documents', 10), async (req, res) => {
     try {
         const band = await bandService.getBandByUser(req.session.user.id);
-        const { type, amount, category_id, description } = req.body;
+        const { type, amount, category_id, description, transaction_date } = req.body;
 
         await transactionService.create({
             bandId: band.id,
@@ -58,7 +58,8 @@ router.post('/transactions', requireBand, upload.array('documents', 10), async (
             description,
             bandFolderId: band.folder_id,
             spreadsheetId: band.accounting_spreadsheet_id,
-            files: req.files
+            files: req.files,
+            transactionDate: transaction_date || null
         });
 
         req.flash.success('Transaction created successfully');

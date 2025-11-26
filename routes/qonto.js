@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { requireAdmin } = require('../lib/middleware');
-const { getTransactionById, getBandById } = require('../lib/db');
+const { getTransactionById, getBandById, validateTransaction } = require('../lib/db');
+const syncService = require('../services/sync-service');
 const qontoApi = require('../lib/qonto-api');
 const qontoDb = require('../lib/qonto-db');
 const qontoCache = require('../lib/qonto-cache');
@@ -254,6 +255,29 @@ router.post('/admin/transactions/:id/link-qonto', requireAdmin, async (req, res)
                     qonto_id: qontoTx.id,
                     message: error.message
                 });
+            }
+        }
+
+        // Auto-validate if amounts match and transaction is pending
+        if (validation.summary.isAmountMatch && transaction.status === 'pending') {
+            // Determine date: use existing or get latest settled_at from linked Qonto txs
+            let dateToUse = transaction.transaction_date;
+            if (!dateToUse) {
+                const allLinks = await qontoDb.getLinkedTransactions(transaction.id);
+                const latestDate = allLinks
+                    .map(l => l.qonto_settled_at)
+                    .filter(Boolean)
+                    .sort()
+                    .pop();
+                dateToUse = latestDate || null;
+            }
+
+            // Validate transaction
+            await validateTransaction(transaction.id, req.session.user.id, dateToUse);
+
+            // Sync to Google Sheets
+            if (transaction.accounting_spreadsheet_id) {
+                await syncService.syncBandTransactions(transaction.band_id, transaction.accounting_spreadsheet_id);
             }
         }
 

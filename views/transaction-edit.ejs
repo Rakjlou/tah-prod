@@ -14,7 +14,8 @@
             <%- include('partials/transaction-form', {
                 transaction,
                 categories,
-                formAction: '/transactions/' + transaction.id
+                formAction: '/transactions/' + transaction.id,
+                canEditDate: true
             }) %>
 
             <div class="section-top-border text-center">
