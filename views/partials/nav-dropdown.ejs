@@ -24,7 +24,7 @@ const activeIndex = items.indexOf(activeItem);
 %>
 
 <div class="nav-dropdown">
-    <div class="nav-dropdown-button">
+    <div class="nav-dropdown-button <%= currentPath && items.some(item => item.href === currentPath) ? 'active' : '' %>">
         <span class="nav-dropdown-arrow nav-dropdown-arrow-left" data-arrow="left">&lt;</span>
         <span class="nav-dropdown-text"><%= activeItem.name %></span>
         <span class="nav-dropdown-arrow nav-dropdown-arrow-right" data-arrow="right">&gt;</span>

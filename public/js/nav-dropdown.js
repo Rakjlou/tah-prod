@@ -18,10 +18,11 @@ function initializeNavDropdown(dropdownElement) {
 
     let candidateIndex = currentIndex;
     let isCycling = false;
+    let isHovering = false;
 
-    // Toggle dropdown menu on button click
-    function toggleMenu(event) {
-        // Don't toggle if clicking on arrows
+    // Navigate on button click
+    function handleButtonClick(event) {
+        // Don't navigate if clicking on arrows
         if (event.target.closest('[data-arrow]')) {
             return;
         }
@@ -35,14 +36,16 @@ function initializeNavDropdown(dropdownElement) {
             return;
         }
 
-        // Toggle menu
-        menu.classList.toggle('show');
+        // Otherwise, navigate to first item
+        const firstItem = items[0];
+        if (firstItem) {
+            window.location.href = firstItem.href;
+        }
     }
 
     // Cycle to previous item
     function cyclePrev(event) {
         event.stopPropagation();
-        menu.classList.remove('show'); // Close menu when cycling
         isCycling = true;
         candidateIndex = (candidateIndex - 1 + items.length) % items.length;
         updateButtonText();
@@ -51,7 +54,6 @@ function initializeNavDropdown(dropdownElement) {
     // Cycle to next item
     function cycleNext(event) {
         event.stopPropagation();
-        menu.classList.remove('show'); // Close menu when cycling
         isCycling = true;
         candidateIndex = (candidateIndex + 1) % items.length;
         updateButtonText();
@@ -66,33 +68,63 @@ function initializeNavDropdown(dropdownElement) {
         }
     }
 
+    // Show menu on hover
+    function handleMouseEnter() {
+        isHovering = true;
+
+        // Only show menu if NOT actively cycling
+        if (!isCycling) {
+            menu.classList.add('show');
+        }
+    }
+
+    // Hide menu when mouse leaves
+    function handleMouseLeave() {
+        isHovering = false;
+        menu.classList.remove('show');
+
+        // Reset cycling state for clean UX
+        if (isCycling) {
+            reset();
+        }
+    }
+
     // Reset state
     function reset() {
         isCycling = false;
         candidateIndex = currentIndex;
         buttonText.textContent = initialText;
         button.classList.remove('cycling');
-        menu.classList.remove('show');
+
+        // Only hide menu if not hovering
+        if (!isHovering) {
+            menu.classList.remove('show');
+        }
     }
 
     // Close menu when clicking outside
     function handleOutsideClick(event) {
         if (!dropdownElement.contains(event.target)) {
+            isHovering = false;
             reset();
         }
     }
 
     // Attach event listeners
-    button.addEventListener('click', toggleMenu);
+    button.addEventListener('click', handleButtonClick);
     if (leftArrow) leftArrow.addEventListener('click', cyclePrev);
     if (rightArrow) rightArrow.addEventListener('click', cycleNext);
+    dropdownElement.addEventListener('mouseenter', handleMouseEnter);
+    dropdownElement.addEventListener('mouseleave', handleMouseLeave);
     document.addEventListener('click', handleOutsideClick);
 
     // Store cleanup function for potential future use
     dropdownElement._cleanup = function() {
-        button.removeEventListener('click', toggleMenu);
+        button.removeEventListener('click', handleButtonClick);
         if (leftArrow) leftArrow.removeEventListener('click', cyclePrev);
         if (rightArrow) rightArrow.removeEventListener('click', cycleNext);
+        dropdownElement.removeEventListener('mouseenter', handleMouseEnter);
+        dropdownElement.removeEventListener('mouseleave', handleMouseLeave);
         document.removeEventListener('click', handleOutsideClick);
     };
 }
