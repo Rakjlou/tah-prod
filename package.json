@@ -5,6 +5,7 @@
     "scripts": {
         "test": "NODE_ENV=test node --test --test-concurrency=1 test/*.test.js",
         "test:auth": "NODE_ENV=test node --test test/auth.test.js",
+        "test:users": "NODE_ENV=test node --test test/users.test.js",
         "test:bands": "NODE_ENV=test node --test --test-concurrency=1 test/bands.test.js test/transactions-*.test.js",
         "test:integration": "NODE_ENV=test node --test test/google-integration.test.js",
         "start": "test -f .env && node --env-file=.env server.js || node server.js",

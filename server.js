@@ -8,6 +8,7 @@ const { flashMiddleware, notFoundHandler, errorHandler } = require('./lib/error-
 // Import route modules
 const authRoutes = require('./routes/auth');
 const configRoutes = require('./routes/config');
+const usersRoutes = require('./routes/users');
 const bandsRoutes = require('./routes/bands');
 const accountRoutes = require('./routes/account');
 const transactionsRoutes = require('./routes/transactions');
@@ -67,6 +68,7 @@ app.get('/', (req, res) => {
 // Mount route modules
 app.use('/', authRoutes);
 app.use('/', configRoutes);
+app.use('/', usersRoutes);
 app.use('/', bandsRoutes);
 app.use('/', accountRoutes);
 app.use('/', transactionsRoutes);

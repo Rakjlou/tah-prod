@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <%- include('partials/head', { title: 'User Management - Tah Prod' }) %>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <main class="main-content">
+        <div class="form-container container-wide">
+            <h1 class="form-title">User Management</h1>
+            <%- include('partials/messages') %>
+
+            <!-- Create New User Form -->
+            <div class="info-box">
+                <h2 class="section-title">Add New Admin User</h2>
+                <form action="/admin/users" method="POST">
+                    <div class="form-group">
+                        <label for="username" class="form-label">Username</label>
+                        <input
+                            type="text"
+                            id="username"
+                            name="username"
+                            class="form-input"
+                            placeholder="admin_user"
+                            pattern="[a-zA-Z0-9_-]+"
+                            required
+                        >
+                        <small class="form-help-small">Letters, numbers, underscores, and hyphens only</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="password" class="form-label">Password</label>
+                        <input
+                            type="password"
+                            id="password"
+                            name="password"
+                            class="form-input"
+                            minlength="6"
+                            required
+                        >
+                        <small class="form-help-small">Minimum 6 characters</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="password_confirm" class="form-label">Confirm Password</label>
+                        <input
+                            type="password"
+                            id="password_confirm"
+                            name="password_confirm"
+                            class="form-input"
+                            minlength="6"
+                            required
+                        >
+                    </div>
+                    <button type="submit" class="btn">Create Admin User</button>
+                </form>
+            </div>
+
+            <!-- Users List -->
+            <% if (users && users.length > 0) { %>
+                <h2 class="section-title">Existing Users</h2>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Role</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% users.forEach(user => { %>
+                                <tr>
+                                    <td>
+                                        <%= user.username %>
+                                        <% if (user.id === currentUserId) { %>
+                                            <span style="color: #888; font-size: 0.85em;">(you)</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (hasRole(user.role, ROLES.ADMIN)) { %>
+                                            Admin
+                                        <% } else if (hasRole(user.role, ROLES.BAND)) { %>
+                                            Band
+                                        <% } else { %>
+                                            None
+                                        <% } %>
+                                    </td>
+                                    <td><%= new Date(user.created_at).toLocaleDateString() %></td>
+                                    <td>
+                                        <!-- Edit Button -->
+                                        <button
+                                            type="button"
+                                            class="btn btn-small mr-half"
+                                            onclick="toggleEditForm(<%= user.id %>)"
+                                        >
+                                            Edit
+                                        </button>
+
+                                        <!-- Delete Button -->
+                                        <% if (user.id !== currentUserId) { %>
+                                            <form action="/admin/users/<%= user.id %>/delete" method="POST" class="inline-form">
+                                                <button
+                                                    type="submit"
+                                                    class="btn btn-small"
+                                                    onclick="return confirm('Are you sure you want to delete user <%= user.username %>? This action cannot be undone.')"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        <% } else { %>
+                                            <button class="btn btn-small" disabled title="Cannot delete yourself">
+                                                Delete
+                                            </button>
+                                        <% } %>
+                                    </td>
+                                </tr>
+                                <!-- Inline Edit Form (hidden by default) -->
+                                <tr id="edit-form-<%= user.id %>" class="hidden">
+                                    <td colspan="4">
+                                        <form action="/admin/users/<%= user.id %>/edit" method="POST" style="padding: 1rem; border: 1px solid white;">
+                                            <h3 class="section-title small-section-title">Edit User: <%= user.username %></h3>
+
+                                            <div class="form-group">
+                                                <label for="edit-username-<%= user.id %>" class="form-label">Username</label>
+                                                <input
+                                                    type="text"
+                                                    id="edit-username-<%= user.id %>"
+                                                    name="username"
+                                                    class="form-input"
+                                                    value="<%= user.username %>"
+                                                    pattern="[a-zA-Z0-9_-]+"
+                                                    required
+                                                >
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="edit-password-<%= user.id %>" class="form-label">New Password</label>
+                                                <input
+                                                    type="password"
+                                                    id="edit-password-<%= user.id %>"
+                                                    name="password"
+                                                    class="form-input"
+                                                    minlength="6"
+                                                    placeholder="Leave blank to keep current password"
+                                                >
+                                                <small class="form-help-small">Leave blank to keep current password</small>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="edit-password-confirm-<%= user.id %>" class="form-label">Confirm New Password</label>
+                                                <input
+                                                    type="password"
+                                                    id="edit-password-confirm-<%= user.id %>"
+                                                    name="password_confirm"
+                                                    class="form-input"
+                                                    minlength="6"
+                                                >
+                                            </div>
+
+                                            <div style="display: flex; gap: 0.5rem;">
+                                                <button type="submit" class="btn btn-small">Save Changes</button>
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-small"
+                                                    onclick="toggleEditForm(<%= user.id %>)"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } else { %>
+                <p class="text-center padding-2">No users found.</p>
+            <% } %>
+        </div>
+    </main>
+
+    <%- include('partials/footer') %>
+
+    <script>
+        function toggleEditForm(userId) {
+            const editRow = document.getElementById('edit-form-' + userId);
+            if (editRow.classList.contains('hidden')) {
+                // Hide all other edit forms first
+                document.querySelectorAll('[id^="edit-form-"]').forEach(row => {
+                    row.classList.add('hidden');
+                });
+                editRow.classList.remove('hidden');
+            } else {
+                editRow.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
