@@ -131,4 +131,42 @@ router.post('/config/categories/:id/delete', requireAdmin, async (req, res) => {
     res.redirect('/config');
 });
 
+/**
+ * GET /config/invoices
+ * Display invoice configuration panel
+ */
+router.get('/config/invoices', requireAdmin, async (req, res) => {
+    const config = await getAllConfig();
+    res.render('config-invoices', { config });
+});
+
+/**
+ * POST /config/invoices
+ * Update invoice configuration
+ */
+router.post('/config/invoices', requireAdmin, async (req, res) => {
+    const invoiceConfigKeys = [
+        'invoice_prefix',
+        'association_name',
+        'association_address',
+        'association_siret',
+        'tva_mention',
+        'payment_delay_days',
+        'late_penalty_rate',
+        'iban',
+        'bic',
+        'bank_name',
+        'custom_footer'
+    ];
+
+    for (const key of invoiceConfigKeys) {
+        if (req.body[key] !== undefined) {
+            await configService.set(key, req.body[key]);
+        }
+    }
+
+    req.flash.success('Invoice configuration saved successfully');
+    res.redirect('/config/invoices');
+});
+
 module.exports = router;

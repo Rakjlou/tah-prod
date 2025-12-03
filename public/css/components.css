@@ -854,3 +854,227 @@
 .mt-2 {
     margin-top: 2rem;
 }
+
+/* Invoice Status Badges */
+.status-badge-draft {
+    background-color: #666;
+    color: #fff;
+}
+
+.status-badge-sent {
+    background-color: #2196f3;
+    color: #fff;
+}
+
+.status-badge-paid {
+    background-color: #4caf50;
+    color: #fff;
+}
+
+.status-badge-cancelled {
+    background-color: #f44336;
+    color: #fff;
+}
+
+/* Invoice Form Styles */
+.invoice-item {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: var(--border-standard);
+    background-color: var(--color-accent);
+}
+
+.invoice-item:last-child {
+    margin-bottom: 0;
+}
+
+.form-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.form-group-half {
+    flex: 1;
+    min-width: 150px;
+}
+
+.form-group-flex {
+    flex: 2;
+    min-width: 200px;
+}
+
+.form-group-small {
+    flex: 0 0 100px;
+}
+
+.form-group-action {
+    flex: 0 0 40px;
+    display: flex;
+    align-items: flex-end;
+}
+
+.btn-remove-item {
+    padding: 0.5rem 0.75rem;
+    background-color: #f44336;
+    color: #fff;
+    border: 1px solid #f44336;
+}
+
+.btn-remove-item:hover {
+    background-color: #d32f2f;
+    color: #fff;
+}
+
+.invoice-total-row {
+    text-align: right;
+    font-size: 1.2rem;
+    padding: 1rem;
+    margin-top: 1rem;
+    border-top: var(--border-standard);
+}
+
+.item-total {
+    display: inline-block;
+    min-width: 100px;
+    text-align: right;
+}
+
+/* Tools Page */
+.page-title {
+    font-size: 2rem;
+    font-weight: normal;
+    letter-spacing: var(--spacing-letter);
+    margin-bottom: 1rem;
+}
+
+.page-description {
+    margin-bottom: 2rem;
+    letter-spacing: var(--spacing-letter);
+}
+
+.tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.tool-card {
+    display: block;
+    padding: 2rem;
+    border: var(--border-standard);
+    background-color: var(--color-accent);
+    color: var(--color-fg);
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.tool-card:hover {
+    background-color: var(--color-fg);
+    color: var(--color-bg);
+}
+
+.tool-card-title {
+    font-size: 1.3rem;
+    font-weight: normal;
+    margin-bottom: 0.75rem;
+    letter-spacing: var(--spacing-letter);
+}
+
+.tool-card-description {
+    font-size: 0.9rem;
+    letter-spacing: var(--spacing-letter);
+    line-height: 1.5;
+}
+
+/* Table Text Alignment */
+.text-right {
+    text-align: right;
+}
+
+/* Clickable Table */
+.clickable-table tbody tr {
+    cursor: pointer;
+}
+
+.clickable-table tbody tr:hover {
+    outline: 3px solid var(--color-fg);
+    outline-offset: -1px;
+}
+
+/* Flex Column */
+.flex-column {
+    flex-direction: column;
+}
+
+.flex-gap-half {
+    gap: 0.5rem;
+}
+
+/* Form Inline */
+.form-label-inline {
+    display: inline-block;
+    margin-right: 0.5rem;
+    letter-spacing: var(--spacing-letter);
+}
+
+.form-input-inline {
+    width: auto;
+    min-width: 200px;
+}
+
+/* Form Footer */
+.form-footer {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: var(--border-standard);
+}
+
+/* Form Description */
+.form-description {
+    margin-bottom: 2rem;
+    letter-spacing: var(--spacing-letter);
+}
+
+/* Form Help */
+.form-help {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: #888;
+}
+
+/* Secondary Button */
+.btn-secondary {
+    background-color: transparent;
+    color: var(--color-fg);
+    border: var(--border-standard);
+}
+
+.btn-secondary:hover {
+    background-color: var(--color-fg);
+    color: var(--color-bg);
+}
+
+/* Payment Conditions Section */
+#payment-conditions-section {
+    margin-left: 20px;
+    padding-left: 20px;
+    border-left: 1px solid white;
+}
+
+.condition-text {
+    margin-top: 8px;
+    margin-left: 24px;
+}
+
+.checkbox-label {
+    cursor: pointer;
+    font-family: Monaco, 'Courier New', monospace;
+    font-size: 14px;
+}
+
+.checkbox-label input[type="checkbox"] {
+    cursor: pointer;
+    margin: 0;
+}

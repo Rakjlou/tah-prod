@@ -14,6 +14,9 @@ const accountRoutes = require('./routes/account');
 const transactionsRoutes = require('./routes/transactions');
 const adminTransactionsRoutes = require('./routes/admin-transactions');
 const qontoRoutes = require('./routes/qonto');
+const toolsRoutes = require('./routes/tools');
+const invoicesRoutes = require('./routes/invoices');
+const adminInvoicesRoutes = require('./routes/admin-invoices');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,6 +29,11 @@ app.set('views', path.join(__dirname, 'views'));
 
 // Static files and body parsing
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve vendor libraries from node_modules
+app.use('/vendor/jspdf', express.static(path.join(__dirname, 'node_modules/jspdf/dist')));
+app.use('/vendor/jspdf-autotable', express.static(path.join(__dirname, 'node_modules/jspdf-autotable/dist')));
+
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
@@ -74,6 +82,9 @@ app.use('/', accountRoutes);
 app.use('/', transactionsRoutes);
 app.use('/', adminTransactionsRoutes);
 app.use('/', qontoRoutes);
+app.use('/', toolsRoutes);
+app.use('/', invoicesRoutes);
+app.use('/', adminInvoicesRoutes);
 
 // 404 handler
 app.use(notFoundHandler);

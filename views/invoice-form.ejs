@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('partials/head', { title: (isEdit ? 'Edit' : 'New') + ' Invoice - Tah Prod' }) %>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <main class="main-content">
+        <div class="form-container">
+            <h1 class="form-title"><%= isEdit ? 'Edit Invoice' : 'New Invoice' %></h1>
+            <%- include('partials/messages') %>
+
+            <form action="<%= isEdit ? urlPrefix + '/' + invoice.id + '/edit' : urlPrefix %>" method="POST" id="invoice-form">
+
+                <% if (isAdmin && !isEdit) { %>
+                    <div class="form-group">
+                        <label for="band_id" class="form-label">Band *</label>
+                        <select id="band_id" name="band_id" class="form-input" required>
+                            <option value="">Select a band</option>
+                            <% bands.forEach(b => { %>
+                                <option value="<%= b.id %>"><%= b.name %></option>
+                            <% }); %>
+                        </select>
+                    </div>
+                <% } %>
+
+                <h2 class="section-title">Client Information</h2>
+
+                <div class="form-group">
+                    <label for="client_name" class="form-label">Client Name *</label>
+                    <input
+                        type="text"
+                        id="client_name"
+                        name="client_name"
+                        class="form-input"
+                        value="<%= invoice ? invoice.client_name : '' %>"
+                        placeholder="Name or company name"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="client_address" class="form-label">Client Address *</label>
+                    <textarea
+                        id="client_address"
+                        name="client_address"
+                        class="form-input"
+                        rows="3"
+                        placeholder="Full address"
+                        required
+                    ><%= invoice ? invoice.client_address : '' %></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="client_siret" class="form-label">Client SIRET (optional)</label>
+                    <input
+                        type="text"
+                        id="client_siret"
+                        name="client_siret"
+                        class="form-input"
+                        value="<%= invoice && invoice.client_siret ? invoice.client_siret : '' %>"
+                        placeholder="For business clients"
+                    >
+                </div>
+
+                <h2 class="section-title config-section-title">Dates</h2>
+
+                <div class="form-row">
+                    <div class="form-group form-group-half">
+                        <label for="issue_date" class="form-label">Issue Date *</label>
+                        <input
+                            type="date"
+                            id="issue_date"
+                            name="issue_date"
+                            class="form-input"
+                            value="<%= invoice ? invoice.issue_date : new Date().toISOString().split('T')[0] %>"
+                            required
+                        >
+                    </div>
+                    <div class="form-group form-group-half">
+                        <label for="service_date" class="form-label">Service Date (optional)</label>
+                        <input
+                            type="date"
+                            id="service_date"
+                            name="service_date"
+                            class="form-input"
+                            value="<%= invoice && invoice.service_date ? invoice.service_date : '' %>"
+                        >
+                    </div>
+                </div>
+
+                <h2 class="section-title config-section-title">Services</h2>
+
+                <div id="items-container">
+                    <% if (invoice && invoice.items && invoice.items.length > 0) { %>
+                        <% invoice.items.forEach((item, index) => { %>
+                            <div class="invoice-item" data-index="<%= index %>">
+                                <div class="form-row">
+                                    <div class="form-group form-group-flex">
+                                        <label class="form-label">Description *</label>
+                                        <input
+                                            type="text"
+                                            name="item_description"
+                                            class="form-input"
+                                            value="<%= item.description %>"
+                                            placeholder="Service description"
+                                            required
+                                        >
+                                    </div>
+                                    <div class="form-group form-group-small">
+                                        <label class="form-label">Quantity</label>
+                                        <input
+                                            type="number"
+                                            name="item_quantity"
+                                            class="form-input item-quantity"
+                                            value="<%= item.quantity %>"
+                                            min="0.01"
+                                            step="0.01"
+                                            required
+                                        >
+                                    </div>
+                                    <div class="form-group form-group-small">
+                                        <label class="form-label">Unit Price (EUR)</label>
+                                        <input
+                                            type="number"
+                                            name="item_unit_price"
+                                            class="form-input item-unit-price"
+                                            value="<%= item.unit_price %>"
+                                            min="0"
+                                            step="0.01"
+                                            required
+                                        >
+                                    </div>
+                                    <div class="form-group form-group-small">
+                                        <label class="form-label">Total</label>
+                                        <span class="item-total"><%= item.total.toFixed(2) %> EUR</span>
+                                    </div>
+                                    <div class="form-group form-group-action">
+                                        <button type="button" class="btn btn-small btn-remove-item" onclick="removeItem(this)">X</button>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }); %>
+                    <% } else { %>
+                        <div class="invoice-item" data-index="0">
+                            <div class="form-row">
+                                <div class="form-group form-group-flex">
+                                    <label class="form-label">Description *</label>
+                                    <input
+                                        type="text"
+                                        name="item_description"
+                                        class="form-input"
+                                        placeholder="Service description"
+                                        required
+                                    >
+                                </div>
+                                <div class="form-group form-group-small">
+                                    <label class="form-label">Quantity</label>
+                                    <input
+                                        type="number"
+                                        name="item_quantity"
+                                        class="form-input item-quantity"
+                                        value="1"
+                                        min="0.01"
+                                        step="0.01"
+                                        required
+                                    >
+                                </div>
+                                <div class="form-group form-group-small">
+                                    <label class="form-label">Unit Price (EUR)</label>
+                                    <input
+                                        type="number"
+                                        name="item_unit_price"
+                                        class="form-input item-unit-price"
+                                        value="0"
+                                        min="0"
+                                        step="0.01"
+                                        required
+                                    >
+                                </div>
+                                <div class="form-group form-group-small">
+                                    <label class="form-label">Total</label>
+                                    <span class="item-total">0.00 EUR</span>
+                                </div>
+                                <div class="form-group form-group-action">
+                                    <button type="button" class="btn btn-small btn-remove-item" onclick="removeItem(this)" style="visibility: hidden;">X</button>
+                                </div>
+                            </div>
+                        </div>
+                    <% } %>
+                </div>
+
+                <div class="mb-1">
+                    <button type="button" class="btn btn-secondary btn-small" onclick="addItem()">+ Add Line Item</button>
+                </div>
+
+                <div class="invoice-total-row">
+                    <strong>TOTAL: <span id="invoice-total"><%= invoice ? invoice.total_amount.toFixed(2) : '0.00' %></span> EUR</strong>
+                </div>
+
+                <h2 class="section-title config-section-title">Notes</h2>
+
+                <div class="form-group">
+                    <label for="notes" class="form-label">Remarks (optional)</label>
+                    <textarea
+                        id="notes"
+                        name="notes"
+                        class="form-input"
+                        rows="2"
+                        placeholder="Internal notes or comments for client"
+                    ><%= invoice && invoice.notes ? invoice.notes : '' %></textarea>
+                </div>
+
+                <h2 class="section-title config-section-title">Payment Conditions</h2>
+
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="enable_payment_conditions" name="enable_payment_conditions">
+                        Enable custom payment conditions
+                    </label>
+                </div>
+
+                <div id="payment-conditions-section" style="display: none;">
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" class="payment-condition-toggle" id="enable_payment_delay" name="enable_payment_delay">
+                            Payment delay
+                        </label>
+                        <textarea id="payment_delay_text" name="payment_delay_text" class="form-input condition-text" rows="2" style="display: none;"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" class="payment-condition-toggle" id="enable_late_penalty" name="enable_late_penalty">
+                            Late penalty rate
+                        </label>
+                        <textarea id="late_penalty_text" name="late_penalty_text" class="form-input condition-text" rows="2" style="display: none;"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" class="payment-condition-toggle" id="enable_recovery_fee" name="enable_recovery_fee">
+                            Recovery fee
+                        </label>
+                        <textarea id="recovery_fee_text" name="recovery_fee_text" class="form-input condition-text" rows="2" style="display: none;"></textarea>
+                    </div>
+                </div>
+
+                <% if (isEdit && isAdmin) { %>
+                    <h2 class="section-title config-section-title">Status</h2>
+                    <div class="form-group">
+                        <label for="status" class="form-label">Invoice Status</label>
+                        <select id="status" name="status" class="form-input">
+                            <option value="draft" <%= invoice.status === 'draft' ? 'selected' : '' %>>Draft</option>
+                            <option value="sent" <%= invoice.status === 'sent' ? 'selected' : '' %>>Sent</option>
+                            <option value="paid" <%= invoice.status === 'paid' ? 'selected' : '' %>>Paid</option>
+                            <option value="cancelled" <%= invoice.status === 'cancelled' ? 'selected' : '' %>>Cancelled</option>
+                        </select>
+                    </div>
+                <% } %>
+
+                <button type="submit" class="btn"><%= isEdit ? 'Save Changes' : 'Create Invoice' %></button>
+            </form>
+
+            <div class="mt-2">
+                <a href="<%= isEdit ? urlPrefix + '/' + invoice.id : urlPrefix %>" class="btn btn-secondary">Cancel</a>
+            </div>
+        </div>
+    </main>
+
+    <%- include('partials/footer') %>
+
+    <script>
+        let itemIndex = document.querySelectorAll('.invoice-item').length;
+
+        function addItem() {
+            const container = document.getElementById('items-container');
+            const newItem = document.createElement('div');
+            newItem.className = 'invoice-item';
+            newItem.dataset.index = itemIndex;
+            newItem.innerHTML = `
+                <div class="form-row">
+                    <div class="form-group form-group-flex">
+                        <label class="form-label">Description *</label>
+                        <input
+                            type="text"
+                            name="item_description"
+                            class="form-input"
+                            placeholder="Service description"
+                            required
+                        >
+                    </div>
+                    <div class="form-group form-group-small">
+                        <label class="form-label">Quantity</label>
+                        <input
+                            type="number"
+                            name="item_quantity"
+                            class="form-input item-quantity"
+                            value="1"
+                            min="0.01"
+                            step="0.01"
+                            required
+                        >
+                    </div>
+                    <div class="form-group form-group-small">
+                        <label class="form-label">Unit Price (EUR)</label>
+                        <input
+                            type="number"
+                            name="item_unit_price"
+                            class="form-input item-unit-price"
+                            value="0"
+                            min="0"
+                            step="0.01"
+                            required
+                        >
+                    </div>
+                    <div class="form-group form-group-small">
+                        <label class="form-label">Total</label>
+                        <span class="item-total">0.00 EUR</span>
+                    </div>
+                    <div class="form-group form-group-action">
+                        <button type="button" class="btn btn-small btn-remove-item" onclick="removeItem(this)">X</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(newItem);
+            itemIndex++;
+            updateRemoveButtons();
+            attachItemListeners(newItem);
+        }
+
+        function removeItem(button) {
+            const items = document.querySelectorAll('.invoice-item');
+            if (items.length > 1) {
+                button.closest('.invoice-item').remove();
+                updateRemoveButtons();
+                calculateTotal();
+            }
+        }
+
+        function updateRemoveButtons() {
+            const items = document.querySelectorAll('.invoice-item');
+            const removeButtons = document.querySelectorAll('.btn-remove-item');
+            removeButtons.forEach((btn, i) => {
+                btn.style.visibility = items.length > 1 ? 'visible' : 'hidden';
+            });
+        }
+
+        function calculateTotal() {
+            let total = 0;
+            document.querySelectorAll('.invoice-item').forEach(item => {
+                const qty = parseFloat(item.querySelector('.item-quantity').value) || 0;
+                const price = parseFloat(item.querySelector('.item-unit-price').value) || 0;
+                const itemTotal = qty * price;
+                item.querySelector('.item-total').textContent = itemTotal.toFixed(2) + ' EUR';
+                total += itemTotal;
+            });
+            document.getElementById('invoice-total').textContent = total.toFixed(2);
+        }
+
+        function attachItemListeners(item) {
+            const qtyInput = item.querySelector('.item-quantity');
+            const priceInput = item.querySelector('.item-unit-price');
+            qtyInput.addEventListener('input', calculateTotal);
+            priceInput.addEventListener('input', calculateTotal);
+        }
+
+        // Attach listeners to existing items
+        document.querySelectorAll('.invoice-item').forEach(attachItemListeners);
+        updateRemoveButtons();
+
+        // ===== PAYMENT CONDITIONS LOGIC =====
+
+        // Default texts with config values
+        const defaultTexts = {
+            payment_delay: 'Paiement à <%= invoiceConfig.paymentDelayDays %> jours',
+            late_penalty: 'Pénalités de retard: <%= invoiceConfig.latePenaltyRate %>',
+            recovery_fee: 'Indemnité forfaitaire pour frais de recouvrement: 40 EUR'
+        };
+
+        // Show/hide main payment conditions section
+        document.getElementById('enable_payment_conditions').addEventListener('change', function() {
+            document.getElementById('payment-conditions-section').style.display =
+                this.checked ? 'block' : 'none';
+
+            // When unchecking main checkbox, uncheck all sub-checkboxes
+            if (!this.checked) {
+                document.querySelectorAll('.payment-condition-toggle').forEach(cb => {
+                    cb.checked = false;
+                    cb.closest('.form-group').querySelector('.condition-text').style.display = 'none';
+                });
+            }
+        });
+
+        // Handle individual condition toggles
+        document.querySelectorAll('.payment-condition-toggle').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const textarea = this.closest('.form-group').querySelector('.condition-text');
+                if (this.checked) {
+                    // Pre-fill from config if empty
+                    if (!textarea.value.trim()) {
+                        const key = this.id.replace('enable_', '');
+                        textarea.value = defaultTexts[key] || '';
+                    }
+                    textarea.style.display = 'block';
+                } else {
+                    textarea.style.display = 'none';
+                }
+                checkAllSubcategories();
+            });
+        });
+
+        // Auto-uncheck main checkbox when all subcategories are unchecked
+        function checkAllSubcategories() {
+            const anyChecked = Array.from(document.querySelectorAll('.payment-condition-toggle'))
+                .some(cb => cb.checked);
+            if (!anyChecked) {
+                document.getElementById('enable_payment_conditions').checked = false;
+                document.getElementById('payment-conditions-section').style.display = 'none';
+            }
+        }
+
+        // Initialize for edit mode
+        <% if (invoice) { %>
+            <% if (invoice.payment_delay_text || invoice.late_penalty_text || invoice.recovery_fee_text) { %>
+                document.getElementById('enable_payment_conditions').checked = true;
+                document.getElementById('payment-conditions-section').style.display = 'block';
+
+                <% if (invoice.payment_delay_text) { %>
+                    document.getElementById('enable_payment_delay').checked = true;
+                    document.getElementById('payment_delay_text').value = `<%- invoice.payment_delay_text.replace(/`/g, '\\`') %>`;
+                    document.getElementById('payment_delay_text').style.display = 'block';
+                <% } %>
+
+                <% if (invoice.late_penalty_text) { %>
+                    document.getElementById('enable_late_penalty').checked = true;
+                    document.getElementById('late_penalty_text').value = `<%- invoice.late_penalty_text.replace(/`/g, '\\`') %>`;
+                    document.getElementById('late_penalty_text').style.display = 'block';
+                <% } %>
+
+                <% if (invoice.recovery_fee_text) { %>
+                    document.getElementById('enable_recovery_fee').checked = true;
+                    document.getElementById('recovery_fee_text').value = `<%- invoice.recovery_fee_text.replace(/`/g, '\\`') %>`;
+                    document.getElementById('recovery_fee_text').style.display = 'block';
+                <% } %>
+            <% } %>
+        <% } %>
+    </script>
+</body>
+</html>

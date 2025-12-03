@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('partials/head', { title: 'Invoice Configuration - Tah Prod' }) %>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <main class="main-content">
+        <div class="form-container">
+            <h1 class="form-title">Invoice Configuration</h1>
+            <%- include('partials/messages') %>
+
+            <p class="form-description">
+                Configure default information that will appear on your invoices.
+            </p>
+
+            <form action="/config/invoices" method="POST">
+                <h2 class="section-title">Association Information</h2>
+
+                <div class="form-group">
+                    <label for="invoice_prefix" class="form-label">Invoice Prefix</label>
+                    <input type="text" id="invoice_prefix" name="invoice_prefix" class="form-input"
+                        value="<%= typeof config !== 'undefined' && config.invoice_prefix ? config.invoice_prefix : 'FAC' %>"
+                        placeholder="FAC">
+                    <small class="form-help">Format: PREFIX-YEAR-NUMBER (e.g., FAC-2025-001)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="association_name" class="form-label">Association Name</label>
+                    <input type="text" id="association_name" name="association_name" class="form-input"
+                        value="<%= typeof config !== 'undefined' && config.association_name ? config.association_name : '' %>"
+                        placeholder="Association Loi 1901">
+                </div>
+
+                <div class="form-group">
+                    <label for="association_address" class="form-label">Registered Office Address</label>
+                    <textarea id="association_address" name="association_address" class="form-input" rows="3"
+                        placeholder="123 Rue Example&#10;75001 Paris"><%= typeof config !== 'undefined' && config.association_address ? config.association_address : '' %></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="association_siret" class="form-label">SIRET Number</label>
+                    <input type="text" id="association_siret" name="association_siret" class="form-input"
+                        value="<%= typeof config !== 'undefined' && config.association_siret ? config.association_siret : '' %>"
+                        placeholder="123 456 789 00012">
+                </div>
+
+                <div class="form-group">
+                    <label for="tva_mention" class="form-label">VAT Mention</label>
+                    <input type="text" id="tva_mention" name="tva_mention" class="form-input"
+                        value="<%= typeof config !== 'undefined' && config.tva_mention ? config.tva_mention : 'TVA non applicable, art. 293 B du CGI' %>"
+                        placeholder="TVA non applicable, art. 293 B du CGI">
+                    <small class="form-help">For VAT-exempt associations</small>
+                </div>
+
+                <h2 class="section-title config-section-title">Payment Terms</h2>
+
+                <div class="form-group">
+                    <label for="payment_delay_days" class="form-label">Payment Delay (days)</label>
+                    <input type="number" id="payment_delay_days" name="payment_delay_days" class="form-input"
+                        value="<%= typeof config !== 'undefined' && config.payment_delay_days ? config.payment_delay_days : '30' %>"
+                        min="0" placeholder="30">
+                </div>
+
+                <div class="form-group">
+                    <label for="late_penalty_rate" class="form-label">Late Penalty Rate</label>
+                    <input type="text" id="late_penalty_rate" name="late_penalty_rate" class="form-input"
+                        value="<%= typeof config !== 'undefined' && config.late_penalty_rate ? config.late_penalty_rate : '3 fois le taux d\'interet legal' %>"
+                        placeholder="3 fois le taux d'interet legal">
+                    <small class="form-help">The 40 EUR fixed recovery fee will be automatically mentioned</small>
+                </div>
+
+                <h2 class="section-title config-section-title">Bank Details</h2>
+
+                <div class="form-group">
+                    <label for="bank_name" class="form-label">Bank Name</label>
+                    <input type="text" id="bank_name" name="bank_name" class="form-input"
+                        value="<%= typeof config !== 'undefined' && config.bank_name ? config.bank_name : '' %>"
+                        placeholder="Your bank name">
+                </div>
+
+                <div class="form-group">
+                    <label for="iban" class="form-label">IBAN</label>
+                    <input type="text" id="iban" name="iban" class="form-input"
+                        value="<%= typeof config !== 'undefined' && config.iban ? config.iban : '' %>"
+                        placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX">
+                </div>
+
+                <div class="form-group">
+                    <label for="bic" class="form-label">BIC / SWIFT</label>
+                    <input type="text" id="bic" name="bic" class="form-input"
+                        value="<%= typeof config !== 'undefined' && config.bic ? config.bic : '' %>"
+                        placeholder="XXXXXXXX">
+                </div>
+
+                <h2 class="section-title config-section-title">Customization</h2>
+
+                <div class="form-group">
+                    <label for="custom_footer" class="form-label">Custom Footer (optional)</label>
+                    <textarea id="custom_footer" name="custom_footer" class="form-input" rows="2"
+                        placeholder="Additional text at bottom of invoice"><%= typeof config !== 'undefined' && config.custom_footer ? config.custom_footer : '' %></textarea>
+                </div>
+
+                <button type="submit" class="btn">Save Configuration</button>
+            </form>
+
+            <div class="form-footer">
+                <a href="/config" class="btn btn-secondary">Back to General Config</a>
+            </div>
+        </div>
+    </main>
+
+    <%- include('partials/footer') %>
+</body>
+</html>

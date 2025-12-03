@@ -131,6 +131,14 @@
                     </form>
                 </div>
             <% } %>
+
+            <% if (googleConfigured && isGoogleAuthenticated) { %>
+                <div class="info-box config-info-box">
+                    <h2 class="section-title">Invoice Settings</h2>
+                    <p>Configure default information for your invoices (association details, bank info, payment terms).</p>
+                    <a href="/config/invoices" class="btn">Configure Invoices</a>
+                </div>
+            <% } %>
         </div>
     </main>
 

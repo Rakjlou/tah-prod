@@ -170,7 +170,46 @@ async function createTables(db) {
             linked_by INTEGER,
             FOREIGN KEY (transaction_id) REFERENCES transactions(id) ON DELETE CASCADE,
             FOREIGN KEY (linked_by) REFERENCES users(id)
-        )`
+        )`,
+
+        // Invoices table
+        `CREATE TABLE invoices (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            band_id INTEGER NOT NULL,
+            invoice_number TEXT UNIQUE NOT NULL,
+            issue_date TEXT NOT NULL,
+            service_date TEXT,
+            client_name TEXT NOT NULL,
+            client_address TEXT NOT NULL,
+            client_siret TEXT,
+            total_amount REAL NOT NULL DEFAULT 0 CHECK(total_amount >= 0),
+            status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft', 'sent', 'paid', 'cancelled')),
+            notes TEXT,
+            transaction_id INTEGER,
+            payment_delay_text TEXT,
+            late_penalty_text TEXT,
+            recovery_fee_text TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (band_id) REFERENCES bands(id) ON DELETE CASCADE,
+            FOREIGN KEY (transaction_id) REFERENCES transactions(id)
+        )`,
+        `CREATE INDEX idx_invoices_band_id ON invoices(band_id)`,
+        `CREATE INDEX idx_invoices_status ON invoices(status)`,
+        `CREATE UNIQUE INDEX idx_invoices_number ON invoices(invoice_number)`,
+
+        // Invoice items table
+        `CREATE TABLE invoice_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            invoice_id INTEGER NOT NULL,
+            description TEXT NOT NULL,
+            quantity REAL NOT NULL DEFAULT 1 CHECK(quantity > 0),
+            unit_price REAL NOT NULL DEFAULT 0 CHECK(unit_price >= 0),
+            total REAL NOT NULL DEFAULT 0 CHECK(total >= 0),
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+        )`,
+        `CREATE INDEX idx_invoice_items_invoice_id ON invoice_items(invoice_id)`
     ];
 
     for (const sql of tables) {

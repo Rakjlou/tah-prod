@@ -15,14 +15,30 @@
                     %>
                     <%- include('nav-dropdown', { items: adminDropdownItems, currentPath: dropdownCurrentPath }) %>
                     <%
+                    const adminToolsDropdownItems = [
+                        { name: 'Tools', href: '/tools' },
+                        { name: 'Invoices', href: '/admin/invoices' }
+                    ];
+                    %>
+                    <%- include('nav-dropdown', { items: adminToolsDropdownItems, currentPath: dropdownCurrentPath }) %>
+                    <%
                     const configDropdownItems = [
                         { name: 'Config', href: '/config' },
+                        { name: 'Invoice Config', href: '/config/invoices' },
                         { name: 'Users', href: '/admin/users' }
                     ];
                     %>
                     <%- include('nav-dropdown', { items: configDropdownItems, currentPath: dropdownCurrentPath }) %>
                 <% } else if (hasRole(ROLES.BAND)) { %>
                     <a href="/transactions" class="nav-link <%= req.path === '/transactions' ? 'active' : '' %>">Transactions</a>
+                    <%
+                    const bandToolsDropdownItems = [
+                        { name: 'Tools', href: '/tools' },
+                        { name: 'Invoices', href: '/invoices' }
+                    ];
+                    const bandDropdownCurrentPath = typeof req !== 'undefined' ? req.path : '';
+                    %>
+                    <%- include('nav-dropdown', { items: bandToolsDropdownItems, currentPath: bandDropdownCurrentPath }) %>
                     <a href="/account" class="nav-link <%= req.path === '/account' ? 'active' : '' %>">My Account</a>
                 <% } %>
                 <a href="/logout" class="nav-link">Disconnect</a>

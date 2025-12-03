@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('partials/head', { title: 'Invoices - Tah Prod' }) %>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <main class="main-content">
+        <div class="form-container container-extra-wide">
+            <h1 class="form-title">Invoices</h1>
+            <%- include('partials/messages') %>
+
+            <div class="info-box">
+                <div class="flex flex-justify-between flex-align-center mb-1">
+                    <div>
+                        <p class="text-large">
+                            <%= invoices.length %> invoice<%= invoices.length !== 1 ? 's' : '' %>
+                        </p>
+                    </div>
+                    <div>
+                        <a href="<%= urlPrefix %>/new" class="btn">New Invoice</a>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="mb-1 flex flex-gap-1 flex-wrap">
+                    <a
+                        href="<%= urlPrefix %><%= isAdmin && bandFilter ? '?band=' + bandFilter : '' %>"
+                        class="btn btn-small <%= !statusFilter ? 'btn-active' : '' %>"
+                    >
+                        All
+                    </a>
+                    <a
+                        href="<%= urlPrefix %>?status=draft<%= isAdmin && bandFilter ? '&band=' + bandFilter : '' %>"
+                        class="btn btn-small <%= statusFilter === 'draft' ? 'btn-active' : '' %>"
+                    >
+                        Draft
+                    </a>
+                    <a
+                        href="<%= urlPrefix %>?status=sent<%= isAdmin && bandFilter ? '&band=' + bandFilter : '' %>"
+                        class="btn btn-small <%= statusFilter === 'sent' ? 'btn-active' : '' %>"
+                    >
+                        Sent
+                    </a>
+                    <a
+                        href="<%= urlPrefix %>?status=paid<%= isAdmin && bandFilter ? '&band=' + bandFilter : '' %>"
+                        class="btn btn-small <%= statusFilter === 'paid' ? 'btn-active' : '' %>"
+                    >
+                        Paid
+                    </a>
+                    <a
+                        href="<%= urlPrefix %>?status=cancelled<%= isAdmin && bandFilter ? '&band=' + bandFilter : '' %>"
+                        class="btn btn-small <%= statusFilter === 'cancelled' ? 'btn-active' : '' %>"
+                    >
+                        Cancelled
+                    </a>
+                </div>
+
+                <% if (isAdmin && bands && bands.length > 0) { %>
+                    <div class="mb-1">
+                        <form action="<%= urlPrefix %>" method="GET" class="inline-form flex flex-gap-1 flex-align-center">
+                            <label for="band" class="form-label-inline">Band:</label>
+                            <select id="band" name="band" class="form-input form-input-inline" onchange="this.form.submit()">
+                                <option value="">All bands</option>
+                                <% bands.forEach(b => { %>
+                                    <option value="<%= b.id %>" <%= bandFilter == b.id ? 'selected' : '' %>><%= b.name %></option>
+                                <% }); %>
+                            </select>
+                            <% if (statusFilter) { %>
+                                <input type="hidden" name="status" value="<%= statusFilter %>">
+                            <% } %>
+                        </form>
+                    </div>
+                <% } %>
+
+                <!-- Invoice Table -->
+                <% if (invoices.length > 0) { %>
+                    <div class="table-wrapper">
+                        <table class="data-table clickable-table">
+                            <thead>
+                                <tr>
+                                    <th>Number</th>
+                                    <th>Date</th>
+                                    <% if (isAdmin) { %>
+                                        <th>Band</th>
+                                    <% } %>
+                                    <th>Client</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% invoices.forEach(invoice => { %>
+                                    <tr class="clickable-row" data-href="<%= urlPrefix %>/<%= invoice.id %>">
+                                        <td><%= invoice.invoice_number %></td>
+                                        <td><%= new Date(invoice.issue_date).toLocaleDateString('en-US') %></td>
+                                        <% if (isAdmin) { %>
+                                            <td><%= invoice.band_name %></td>
+                                        <% } %>
+                                        <td><%= invoice.client_name.length > 30 ? invoice.client_name.substring(0, 30) + '...' : invoice.client_name %></td>
+                                        <td class="text-right"><%= invoice.total_amount.toFixed(2) %> EUR</td>
+                                        <td>
+                                            <% if (invoice.status === 'draft') { %>
+                                                <span class="status-badge status-badge-draft">DRAFT</span>
+                                            <% } else if (invoice.status === 'sent') { %>
+                                                <span class="status-badge status-badge-sent">SENT</span>
+                                            <% } else if (invoice.status === 'paid') { %>
+                                                <span class="status-badge status-badge-paid">PAID</span>
+                                            <% } else if (invoice.status === 'cancelled') { %>
+                                                <span class="status-badge status-badge-cancelled">CANCELLED</span>
+                                            <% } %>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            </tbody>
+                        </table>
+                    </div>
+                <% } else { %>
+                    <p class="text-center">No invoices found.</p>
+                <% } %>
+            </div>
+
+            <div class="mt-2">
+                <a href="/tools" class="btn btn-secondary">Back to Tools</a>
+            </div>
+        </div>
+    </main>
+
+    <%- include('partials/footer') %>
+
+    <script>
+        // Make rows clickable
+        document.querySelectorAll('.clickable-row').forEach(row => {
+            row.addEventListener('click', function() {
+                window.location.href = this.dataset.href;
+            });
+        });
+    </script>
+</body>
+</html>

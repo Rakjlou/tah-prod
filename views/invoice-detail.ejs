@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('partials/head', { title: 'Invoice ' + invoice.invoice_number + ' - Tah Prod' }) %>
+    <script src="/vendor/jspdf/jspdf.umd.min.js"></script>
+    <script src="/vendor/jspdf-autotable/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <main class="main-content">
+        <div class="form-container">
+            <h1 class="form-title">Invoice <%= invoice.invoice_number %></h1>
+            <%- include('partials/messages') %>
+
+            <%
+            const canEdit = isAdmin || invoice.status === 'draft';
+            const canDelete = isAdmin || invoice.status === 'draft';
+            %>
+
+            <!-- Invoice Status -->
+            <div class="info-box">
+                <div class="flex flex-justify-between flex-align-center">
+                    <div>
+                        <p><strong>Number:</strong> <%= invoice.invoice_number %></p>
+                        <p><strong>Band:</strong> <%= invoice.band_name || band.name %></p>
+                        <p><strong>Status:</strong>
+                            <% if (invoice.status === 'draft') { %>
+                                <span class="status-badge status-badge-draft">DRAFT</span>
+                            <% } else if (invoice.status === 'sent') { %>
+                                <span class="status-badge status-badge-sent">SENT</span>
+                            <% } else if (invoice.status === 'paid') { %>
+                                <span class="status-badge status-badge-paid">PAID</span>
+                            <% } else if (invoice.status === 'cancelled') { %>
+                                <span class="status-badge status-badge-cancelled">CANCELLED</span>
+                            <% } %>
+                        </p>
+                        <p><strong>Issue Date:</strong> <%= new Date(invoice.issue_date).toLocaleDateString('en-US') %></p>
+                        <% if (invoice.service_date) { %>
+                            <p><strong>Service Date:</strong> <%= new Date(invoice.service_date).toLocaleDateString('en-US') %></p>
+                        <% } %>
+                    </div>
+                    <div class="flex flex-column flex-gap-half">
+                        <button type="button" class="btn" onclick="generatePDF()">Download PDF</button>
+                        <% if (canEdit) { %>
+                            <a href="<%= urlPrefix %>/<%= invoice.id %>/edit" class="btn btn-secondary">Edit</a>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Client Information -->
+            <div class="info-box">
+                <h2 class="section-title">Client</h2>
+                <p><strong><%= invoice.client_name %></strong></p>
+                <p class="preformatted-text"><%= invoice.client_address %></p>
+                <% if (invoice.client_siret) { %>
+                    <p><strong>SIRET:</strong> <%= invoice.client_siret %></p>
+                <% } %>
+            </div>
+
+            <!-- Line Items -->
+            <div class="info-box">
+                <h2 class="section-title">Services</h2>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Description</th>
+                                <th class="text-right">Quantity</th>
+                                <th class="text-right">Unit Price</th>
+                                <th class="text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% invoice.items.forEach(item => { %>
+                                <tr>
+                                    <td><%= item.description %></td>
+                                    <td class="text-right"><%= item.quantity %></td>
+                                    <td class="text-right"><%= item.unit_price.toFixed(2) %> EUR</td>
+                                    <td class="text-right"><%= item.total.toFixed(2) %> EUR</td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="text-right"><strong>TOTAL</strong></td>
+                                <td class="text-right"><strong><%= invoice.total_amount.toFixed(2) %> EUR</strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <% if (invoice.notes) { %>
+                <div class="info-box">
+                    <h2 class="section-title">Notes</h2>
+                    <p class="preformatted-text"><%= invoice.notes %></p>
+                </div>
+            <% } %>
+
+            <% if (invoice.payment_delay_text || invoice.late_penalty_text || invoice.recovery_fee_text) { %>
+                <div class="info-box">
+                    <h2 class="section-title">Payment Conditions</h2>
+                    <% if (invoice.payment_delay_text) { %>
+                        <div class="detail-row">
+                            <span class="detail-label">Payment Delay:</span>
+                            <span class="detail-value"><%= invoice.payment_delay_text %></span>
+                        </div>
+                    <% } %>
+                    <% if (invoice.late_penalty_text) { %>
+                        <div class="detail-row">
+                            <span class="detail-label">Late Penalty:</span>
+                            <span class="detail-value"><%= invoice.late_penalty_text %></span>
+                        </div>
+                    <% } %>
+                    <% if (invoice.recovery_fee_text) { %>
+                        <div class="detail-row">
+                            <span class="detail-label">Recovery Fee:</span>
+                            <span class="detail-value"><%= invoice.recovery_fee_text %></span>
+                        </div>
+                    <% } %>
+                </div>
+            <% } %>
+
+            <!-- Status Actions -->
+            <% if (invoice.status === 'draft') { %>
+                <div class="info-box">
+                    <h2 class="section-title">Actions</h2>
+                    <form action="<%= urlPrefix %>/<%= invoice.id %>/status" method="POST" class="inline-form">
+                        <input type="hidden" name="status" value="sent">
+                        <button type="submit" class="btn">Mark as Sent</button>
+                    </form>
+                </div>
+            <% } else if (invoice.status === 'sent' && isAdmin) { %>
+                <div class="info-box">
+                    <h2 class="section-title">Actions</h2>
+                    <form action="<%= urlPrefix %>/<%= invoice.id %>/status" method="POST" class="inline-form">
+                        <input type="hidden" name="status" value="paid">
+                        <button type="submit" class="btn">Mark as Paid</button>
+                    </form>
+                </div>
+            <% } %>
+
+            <!-- Create Transaction -->
+            <% if (!invoice.transaction_id && (invoice.status === 'sent' || invoice.status === 'paid')) { %>
+                <div class="info-box">
+                    <h2 class="section-title">Create Transaction</h2>
+                    <p class="mb-1">Create an income transaction from this invoice.</p>
+                    <form action="<%= urlPrefix %>/<%= invoice.id %>/create-transaction" method="POST">
+                        <div class="form-group">
+                            <label for="category_id" class="form-label">Category *</label>
+                            <select id="category_id" name="category_id" class="form-input" required>
+                                <option value="">Select a category</option>
+                                <% categories.filter(c => c.type === 'income' || c.type === 'both').forEach(cat => { %>
+                                    <option value="<%= cat.id %>"><%= cat.name %></option>
+                                <% }); %>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn">Create Transaction</button>
+                    </form>
+                </div>
+            <% } else if (invoice.transaction_id) { %>
+                <div class="info-box">
+                    <h2 class="section-title">Linked Transaction</h2>
+                    <p>This invoice is linked to a transaction.</p>
+                    <a href="<%= isAdmin ? '/admin/transactions/' : '/transactions/' %><%= invoice.transaction_id %>" class="btn btn-small">View Transaction</a>
+                </div>
+            <% } %>
+
+            <!-- Delete -->
+            <% if (canDelete) { %>
+                <div class="info-box">
+                    <h2 class="section-title">Delete</h2>
+                    <form action="<%= urlPrefix %>/<%= invoice.id %>/delete" method="POST">
+                        <button type="submit" class="btn" onclick="return confirm('Delete this invoice?')">
+                            Delete Invoice
+                        </button>
+                    </form>
+                </div>
+            <% } %>
+
+            <div class="mt-2">
+                <a href="<%= urlPrefix %>" class="btn btn-secondary">Back to Invoices</a>
+            </div>
+        </div>
+    </main>
+
+    <%- include('partials/footer') %>
+
+    <script>
+        // Invoice data for PDF generation
+        const invoiceData = {
+            invoiceNumber: '<%- invoice.invoice_number %>',
+            bandName: '<%- invoice.band_name || band.name %>',
+            issueDate: '<%- invoice.issue_date %>',
+            serviceDate: '<%- invoice.service_date || '' %>',
+            clientName: `<%- invoice.client_name.replace(/`/g, '\\`').replace(/\n/g, '\\n') %>`,
+            clientAddress: `<%- invoice.client_address.replace(/`/g, '\\`').replace(/\n/g, '\\n') %>`,
+            clientSiret: '<%- invoice.client_siret || '' %>',
+            totalAmount: <%= invoice.total_amount %>,
+            items: <%- JSON.stringify(invoice.items) %>,
+            paymentDelayText: '<%= invoice.payment_delay_text ? invoice.payment_delay_text.replace(/'/g, "\\'").replace(/\n/g, '\\n') : '' %>',
+            latePenaltyText: '<%= invoice.late_penalty_text ? invoice.late_penalty_text.replace(/'/g, "\\'").replace(/\n/g, '\\n') : '' %>',
+            recoveryFeeText: '<%= invoice.recovery_fee_text ? invoice.recovery_fee_text.replace(/'/g, "\\'").replace(/\n/g, '\\n') : '' %>'
+        };
+
+        const invoiceConfig = {
+            associationName: `<%- invoiceConfig.associationName.replace(/`/g, '\\`') %>`,
+            associationAddress: `<%- invoiceConfig.associationAddress.replace(/`/g, '\\`').replace(/\n/g, '\\n') %>`,
+            associationSiret: '<%- invoiceConfig.associationSiret %>',
+            tvaMention: `<%- invoiceConfig.tvaMention.replace(/`/g, '\\`') %>`,
+            paymentDelayDays: <%= invoiceConfig.paymentDelayDays %>,
+            latePenaltyRate: `<%- invoiceConfig.latePenaltyRate.replace(/`/g, '\\`') %>`,
+            iban: '<%- invoiceConfig.iban %>',
+            bic: '<%- invoiceConfig.bic %>',
+            bankName: `<%- invoiceConfig.bankName.replace(/`/g, '\\`') %>`,
+            customFooter: `<%- invoiceConfig.customFooter.replace(/`/g, '\\`').replace(/\n/g, '\\n') %>`
+        };
+    </script>
+    <script src="/js/invoice-pdf.js"></script>
+</body>
+</html>

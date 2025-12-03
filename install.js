@@ -1,7 +1,7 @@
 const readline = require('readline');
 const fs = require('fs');
 const path = require('path');
-const { initializeDatabase, createUser, setConfig } = require('./lib/db');
+const { initializeDatabase, createUser, setConfig, getConfig, getAllUsers, getUserByUsername } = require('./lib/db');
 const { hashPassword } = require('./lib/auth');
 const { ROLES } = require('./lib/roles');
 
@@ -71,89 +71,130 @@ async function install() {
         console.log('Database initialized successfully');
         console.log('');
 
-        console.log('Please create an admin account:');
-        console.log('');
+        // Check if any admin users exist
+        const existingUsers = await getAllUsers();
+        const adminUsers = existingUsers.filter(u => (u.role & ROLES.ADMIN) === ROLES.ADMIN);
 
-        const username = await question('Username: ');
-        if (!username || username.trim().length === 0) {
-            console.error('Username cannot be empty');
-            process.exit(1);
+        if (adminUsers.length > 0) {
+            console.log('Admin account(s) already exist:');
+            adminUsers.forEach(u => console.log(`  - ${u.username}`));
+            console.log('');
+            console.log('Skipping admin account creation.');
+        } else {
+            console.log('Please create an admin account:');
+            console.log('');
+
+            const username = await question('Username: ');
+            if (!username || username.trim().length === 0) {
+                console.error('Username cannot be empty');
+                process.exit(1);
+            }
+
+            // Check if username already exists
+            const existingUser = await getUserByUsername(username.trim());
+            if (existingUser) {
+                console.error(`User "${username.trim()}" already exists`);
+                process.exit(1);
+            }
+
+            const password = await question('Password: ');
+            if (!password || password.length === 0) {
+                console.error('Password cannot be empty');
+                process.exit(1);
+            }
+
+            console.log('');
+            console.log('Hashing password...');
+            const hashedPassword = await hashPassword(password);
+
+            console.log('Creating admin user...');
+            await createUser(username.trim(), hashedPassword, ROLES.ADMIN);
+            console.log('Admin user created successfully');
         }
 
-        const password = await question('Password: ');
-        if (!password || password.length === 0) {
-            console.error('Password cannot be empty');
-            process.exit(1);
-        }
-
-        console.log('');
-        console.log('Hashing password...');
-        const hashedPassword = await hashPassword(password);
-
-        console.log('Creating admin user...');
-        await createUser(username.trim(), hashedPassword, ROLES.ADMIN);
+        // Check if Google OAuth is already configured
+        const existingClientId = await getConfig('google_client_id');
+        const existingClientSecret = await getConfig('google_client_secret');
+        const oauthConfigured = existingClientId && existingClientSecret;
 
         console.log('');
         console.log('='.repeat(50));
         console.log('Google OAuth Configuration (Optional)');
         console.log('='.repeat(50));
-        console.log('You can configure Google OAuth now or later via /config');
-        console.log('');
 
-        const configureOAuth = await question('Configure Google OAuth now? (y/n): ');
+        if (oauthConfigured) {
+            console.log('Google OAuth is already configured.');
+            console.log('You can update it via /config if needed.');
+        } else {
+            console.log('You can configure Google OAuth now or later via /config');
+            console.log('');
 
-        if (configureOAuth.toLowerCase() === 'y' || configureOAuth.toLowerCase() === 'yes') {
-            const envClientId = process.env.GOOGLE_CLIENT_ID || '';
-            const envClientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
-            const envRedirectUri = process.env.GOOGLE_REDIRECT_URI || '';
-            const envFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID || '';
+            const configureOAuth = await question('Configure Google OAuth now? (y/n): ');
 
-            const clientId = await question(`Google Client ID [${envClientId}]: `) || envClientId;
-            const clientSecret = await question(`Google Client Secret [${envClientSecret}]: `) || envClientSecret;
-            const redirectUri = await question(`Google Redirect URI [${envRedirectUri}]: `) || envRedirectUri;
-            const folderId = await question(`Google Drive Folder ID [${envFolderId}]: `) || envFolderId;
+            if (configureOAuth.toLowerCase() === 'y' || configureOAuth.toLowerCase() === 'yes') {
+                const envClientId = process.env.GOOGLE_CLIENT_ID || '';
+                const envClientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
+                const envRedirectUri = process.env.GOOGLE_REDIRECT_URI || '';
+                const envFolderId = process.env.GOOGLE_DRIVE_FOLDER_ID || '';
 
-            if (clientId) {
-                await setConfig('google_client_id', clientId);
-                console.log('✓ Google Client ID saved');
-            }
-            if (clientSecret) {
-                await setConfig('google_client_secret', clientSecret);
-                console.log('✓ Google Client Secret saved');
-            }
-            if (redirectUri) {
-                await setConfig('google_redirect_uri', redirectUri);
-                console.log('✓ Google Redirect URI saved');
-            }
-            if (folderId) {
-                await setConfig('google_drive_folder_id', folderId);
-                console.log('✓ Google Drive Folder ID saved');
+                const clientId = await question(`Google Client ID [${envClientId}]: `) || envClientId;
+                const clientSecret = await question(`Google Client Secret [${envClientSecret}]: `) || envClientSecret;
+                const redirectUri = await question(`Google Redirect URI [${envRedirectUri}]: `) || envRedirectUri;
+                const folderId = await question(`Google Drive Folder ID [${envFolderId}]: `) || envFolderId;
+
+                if (clientId) {
+                    await setConfig('google_client_id', clientId);
+                    console.log('✓ Google Client ID saved');
+                }
+                if (clientSecret) {
+                    await setConfig('google_client_secret', clientSecret);
+                    console.log('✓ Google Client Secret saved');
+                }
+                if (redirectUri) {
+                    await setConfig('google_redirect_uri', redirectUri);
+                    console.log('✓ Google Redirect URI saved');
+                }
+                if (folderId) {
+                    await setConfig('google_drive_folder_id', folderId);
+                    console.log('✓ Google Drive Folder ID saved');
+                }
             }
         }
+
+        // Check if Qonto is already configured
+        const existingQontoLogin = await getConfig('qonto_api_login');
+        const existingQontoSecret = await getConfig('qonto_api_secret');
+        const qontoConfigured = existingQontoLogin && existingQontoSecret;
 
         console.log('');
         console.log('='.repeat(50));
         console.log('Qonto Bank API Configuration (Optional)');
         console.log('='.repeat(50));
-        console.log('You can configure Qonto API now or later via /config');
-        console.log('');
 
-        const configureQonto = await question('Configure Qonto API now? (y/n): ');
+        if (qontoConfigured) {
+            console.log('Qonto API is already configured.');
+            console.log('You can update it via /config if needed.');
+        } else {
+            console.log('You can configure Qonto API now or later via /config');
+            console.log('');
 
-        if (configureQonto.toLowerCase() === 'y' || configureQonto.toLowerCase() === 'yes') {
-            const envQontoLogin = process.env.QONTO_API_LOGIN || '';
-            const envQontoSecret = process.env.QONTO_API_SECRET || '';
+            const configureQonto = await question('Configure Qonto API now? (y/n): ');
 
-            const qontoLogin = await question(`Qonto API Login [${envQontoLogin}]: `) || envQontoLogin;
-            const qontoSecret = await question(`Qonto API Secret [${envQontoSecret}]: `) || envQontoSecret;
+            if (configureQonto.toLowerCase() === 'y' || configureQonto.toLowerCase() === 'yes') {
+                const envQontoLogin = process.env.QONTO_API_LOGIN || '';
+                const envQontoSecret = process.env.QONTO_API_SECRET || '';
 
-            if (qontoLogin) {
-                await setConfig('qonto_api_login', qontoLogin);
-                console.log('✓ Qonto API Login saved');
-            }
-            if (qontoSecret) {
-                await setConfig('qonto_api_secret', qontoSecret);
-                console.log('✓ Qonto API Secret saved');
+                const qontoLogin = await question(`Qonto API Login [${envQontoLogin}]: `) || envQontoLogin;
+                const qontoSecret = await question(`Qonto API Secret [${envQontoSecret}]: `) || envQontoSecret;
+
+                if (qontoLogin) {
+                    await setConfig('qonto_api_login', qontoLogin);
+                    console.log('✓ Qonto API Login saved');
+                }
+                if (qontoSecret) {
+                    await setConfig('qonto_api_secret', qontoSecret);
+                    console.log('✓ Qonto API Secret saved');
+                }
             }
         }
 

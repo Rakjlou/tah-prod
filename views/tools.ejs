@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <%- include('partials/head', { title: 'Tools - Tah Prod' }) %>
+</head>
+<body>
+    <%- include('partials/navbar') %>
+
+    <main class="main-content">
+        <div class="container">
+            <h1 class="page-title">Tools</h1>
+            <%- include('partials/messages') %>
+
+            <p class="page-description">
+                Available tools for managing your business.
+            </p>
+
+            <div class="tools-grid">
+                <% tools.forEach(tool => { %>
+                    <a href="<%= tool.href %>" class="tool-card">
+                        <h2 class="tool-card-title"><%= tool.name %></h2>
+                        <p class="tool-card-description"><%= tool.description %></p>
+                    </a>
+                <% }); %>
+            </div>
+        </div>
+    </main>
+
+    <%- include('partials/footer') %>
+</body>
+</html>
