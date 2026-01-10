@@ -1056,6 +1056,18 @@
     color: var(--color-bg);
 }
 
+.btn-danger {
+    background-color: #f44336;
+    color: #fff;
+    border-color: #f44336;
+}
+
+.btn-danger:hover {
+    background-color: #d32f2f;
+    border-color: #d32f2f;
+    color: #fff;
+}
+
 /* Payment Conditions Section */
 #payment-conditions-section {
     margin-left: 20px;

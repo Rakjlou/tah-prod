@@ -169,4 +169,14 @@ router.post('/config/invoices', requireAdmin, async (req, res) => {
     res.redirect('/config/invoices');
 });
 
+/**
+ * POST /config/reset-oauth
+ * Revoke Google OAuth token and clear stored credentials
+ */
+router.post('/config/reset-oauth', requireAdmin, async (req, res) => {
+    await googleAuth.revokeToken();
+    req.flash.success('Google authentication has been reset. Please authenticate again.');
+    res.redirect('/config');
+});
+
 module.exports = router;

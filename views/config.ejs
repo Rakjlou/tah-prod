@@ -64,6 +64,16 @@
 
             <% if (googleConfigured && isGoogleAuthenticated) { %>
                 <div class="info-box config-info-box">
+                    <h2 class="section-title">Google Authentication</h2>
+                    <p>You are currently authenticated with Google. If your token has expired or you need to re-authenticate, use the button below.</p>
+                    <form action="/config/reset-oauth" method="POST" class="config-form-spacing">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('This will revoke your Google authentication. You will need to re-authenticate to use Google Drive/Sheets features. Continue?')">
+                            Reset Google Authentication
+                        </button>
+                    </form>
+                </div>
+
+                <div class="info-box config-info-box">
                     <h2 class="section-title">Organization Band</h2>
                     <% if (organizationBandId) { %>
                         <p>Organization band has been created.</p>
