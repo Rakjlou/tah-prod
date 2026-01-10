@@ -6,20 +6,20 @@
 <body>
     <%- include('partials/navbar') %>
 
-    <main class="main-content">
-        <div class="form-container">
-            <h1 class="form-title">My Account</h1>
+    <main class="section">
+        <div class="container">
+            <h1 class="mb-lg">My Account</h1>
             <%- include('partials/messages') %>
 
             <% if (band) { %>
-                <div class="info-box">
-                    <h2 class="section-title">Band Information</h2>
-                    <p><strong>Band Name:</strong> <%= band.name %></p>
-                    <p><strong>Email:</strong> <%= band.email %></p>
+                <div class="card mb-lg">
+                    <h2 class="card-title">Band Information</h2>
+                    <p class="mb-sm"><strong>Band Name:</strong> <%= band.name %></p>
+                    <p class="mb-sm"><strong>Email:</strong> <%= band.email %></p>
 
                     <% if (band.folder_id) { %>
-                        <div class="info-box-divider">
-                            <h3 class="section-title">Google Drive Resources</h3>
+                        <div class="border-t pt-base mt-base">
+                            <h3 class="mb-base">Google Drive Resources</h3>
                             <p>
                                 <a href="https://drive.google.com/drive/folders/<%= band.folder_id %>" target="_blank">
                                     View Band Folder
@@ -29,26 +29,28 @@
                     <% } %>
                 </div>
 
-                <form action="/account/password" method="POST" class="info-box">
-                    <h2 class="section-title">Change Password</h2>
+                <div class="card mb-lg">
+                    <form action="/account/password" method="POST" class="form">
+                        <h2 class="card-title">Change Password</h2>
 
-                    <div class="form-group">
-                        <label for="currentPassword" class="form-label">Current Password</label>
-                        <input type="password" id="currentPassword" name="currentPassword" class="form-input" required>
-                    </div>
+                        <div class="form-group">
+                            <label for="currentPassword" class="form-label">Current Password</label>
+                            <input type="password" id="currentPassword" name="currentPassword" class="form-input" required>
+                        </div>
 
-                    <div class="form-group">
-                        <label for="newPassword" class="form-label">New Password</label>
-                        <input type="password" id="newPassword" name="newPassword" class="form-input" required>
-                    </div>
+                        <div class="form-group">
+                            <label for="newPassword" class="form-label">New Password</label>
+                            <input type="password" id="newPassword" name="newPassword" class="form-input" required>
+                        </div>
 
-                    <div class="form-group">
-                        <label for="confirmPassword" class="form-label">Confirm New Password</label>
-                        <input type="password" id="confirmPassword" name="confirmPassword" class="form-input" required>
-                    </div>
+                        <div class="form-group">
+                            <label for="confirmPassword" class="form-label">Confirm New Password</label>
+                            <input type="password" id="confirmPassword" name="confirmPassword" class="form-input" required>
+                        </div>
 
-                    <button type="submit" class="btn">Update Password</button>
-                </form>
+                        <button type="submit" class="btn btn-primary">Update Password</button>
+                    </form>
+                </div>
             <% } %>
         </div>
     </main>

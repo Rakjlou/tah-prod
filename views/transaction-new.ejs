@@ -6,20 +6,22 @@
 <body>
     <%- include('partials/navbar') %>
 
-    <main class="main-content">
-        <div class="form-container">
-            <h1 class="form-title">New Transaction</h1>
+    <main class="section">
+        <div class="container">
+            <h1 class="mb-lg">New Transaction</h1>
             <%- include('partials/messages') %>
 
-            <%- include('partials/transaction-form', {
-                transaction: null,
-                categories,
-                formAction: '/transactions',
-                canEditDate: true
-            }) %>
+            <div class="card mb-xl">
+                <%- include('partials/transaction-form', {
+                    transaction: null,
+                    categories,
+                    formAction: '/transactions',
+                    canEditDate: true
+                }) %>
+            </div>
 
-            <div class="section-top-border text-center">
-                <a href="/transactions" class="color-fg text-underlined">Cancel</a>
+            <div class="text-center">
+                <a href="/transactions" class="btn btn-secondary">Cancel</a>
             </div>
         </div>
     </main>

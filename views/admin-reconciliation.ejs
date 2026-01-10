@@ -6,73 +6,75 @@
 <body>
     <%- include('partials/navbar') %>
 
-    <div class="container">
-        <h1>Qonto Reconciliation Dashboard</h1>
+    <main class="section">
+        <div class="container">
+            <h1 class="mb-lg">Qonto Reconciliation Dashboard</h1>
 
-        <%- include('partials/messages') %>
+            <%- include('partials/messages') %>
 
-        <!-- Summary Stats -->
-        <div class="reconciliation-stats">
-            <div class="stat-card">
-                <div class="stat-label">Total Discrepancies</div>
-                <div class="stat-value <%= stats.total > 0 ? 'stat-warning' : 'stat-success' %>">
-                    <%= stats.total %>
+            <!-- Summary Stats -->
+            <div class="stat-grid mb-xl">
+                <div class="stat-card">
+                    <div class="stat-label">Total Discrepancies</div>
+                    <div class="stat-value <%= stats.total > 0 ? 'stat-warning' : 'stat-success' %>">
+                        <%= stats.total %>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Difference</div>
+                    <div class="stat-value <%= parseFloat(stats.totalDifference) > 0 ? 'stat-warning' : 'stat-success' %>">
+                        <%= stats.totalDifference %> €
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Pending</div>
+                    <div class="stat-value"><%= stats.pending %></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Validated</div>
+                    <div class="stat-value"><%= stats.validated %></div>
                 </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Total Difference</div>
-                <div class="stat-value <%= parseFloat(stats.totalDifference) > 0 ? 'stat-warning' : 'stat-success' %>">
-                    <%= stats.totalDifference %> €
+
+            <!-- Filters -->
+            <div class="card mb-lg">
+                <form method="GET" action="/admin/reconciliation" class="flex gap-base items-end flex-wrap">
+                    <div class="form-group mb-0">
+                        <label for="band" class="form-label">Band</label>
+                        <select name="band" id="band" class="form-select">
+                            <option value="">All Bands</option>
+                            <% bands.forEach(band => { %>
+                                <option value="<%= band.id %>" <%= bandFilter == band.id ? 'selected' : '' %>>
+                                    <%= band.name %>
+                                </option>
+                            <% }); %>
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-0">
+                        <label for="status" class="form-label">Status</label>
+                        <select name="status" id="status" class="form-select">
+                            <option value="">All Statuses</option>
+                            <option value="pending" <%= statusFilter === 'pending' ? 'selected' : '' %>>Pending</option>
+                            <option value="validated" <%= statusFilter === 'validated' ? 'selected' : '' %>>Validated</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn">Filter</button>
+                    <% if (bandFilter || statusFilter) { %>
+                        <a href="/admin/reconciliation" class="btn btn-secondary">Clear Filters</a>
+                    <% } %>
+                </form>
+            </div>
+
+            <!-- Discrepancies Table -->
+            <% if (discrepancies.length === 0) { %>
+                <div class="message message-success">
+                    <p>No discrepancies found. All linked transactions match their Qonto amounts.</p>
                 </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Pending</div>
-                <div class="stat-value"><%= stats.pending %></div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Validated</div>
-                <div class="stat-value"><%= stats.validated %></div>
-            </div>
-        </div>
-
-        <!-- Filters -->
-        <div class="filters">
-            <form method="GET" action="/admin/reconciliation">
-                <div class="filter-group">
-                    <label for="band">Band:</label>
-                    <select name="band" id="band">
-                        <option value="">All Bands</option>
-                        <% bands.forEach(band => { %>
-                            <option value="<%= band.id %>" <%= bandFilter == band.id ? 'selected' : '' %>>
-                                <%= band.name %>
-                            </option>
-                        <% }); %>
-                    </select>
-                </div>
-
-                <div class="filter-group">
-                    <label for="status">Status:</label>
-                    <select name="status" id="status">
-                        <option value="">All Statuses</option>
-                        <option value="pending" <%= statusFilter === 'pending' ? 'selected' : '' %>>Pending</option>
-                        <option value="validated" <%= statusFilter === 'validated' ? 'selected' : '' %>>Validated</option>
-                    </select>
-                </div>
-
-                <button type="submit" class="btn">Filter</button>
-                <% if (bandFilter || statusFilter) { %>
-                    <a href="/admin/reconciliation" class="btn btn-secondary">Clear Filters</a>
-                <% } %>
-            </form>
-        </div>
-
-        <!-- Discrepancies Table -->
-        <% if (discrepancies.length === 0) { %>
-            <div class="success-message">
-                <p>✓ No discrepancies found! All linked transactions match their Qonto amounts.</p>
-            </div>
-        <% } else { %>
-            <table class="reconciliation-table">
+            <% } else { %>
+                <div class="table-wrapper">
+                <table class="table">
                 <thead>
                     <tr>
                         <th>Transaction ID</th>
@@ -117,17 +119,21 @@
                                 <% } %>
                             </td>
                             <td>
-                                <a href="/admin/transactions/<%= disc.transaction.id %>" class="btn-link">View</a>
+                                <a href="/admin/transactions/<%= disc.transaction.id %>" class="btn btn-sm">View</a>
                             </td>
                         </tr>
                     <% }); %>
                 </tbody>
             </table>
+            </div>
         <% } %>
 
-        <div class="nav-buttons">
-            <a href="/admin/transactions" class="btn">Back to Transactions</a>
+            <div class="mt-xl">
+                <a href="/admin/transactions" class="btn btn-secondary">Back to Transactions</a>
+            </div>
         </div>
-    </div>
+    </main>
+
+    <%- include('partials/footer') %>
 </body>
 </html>

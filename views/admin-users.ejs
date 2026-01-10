@@ -6,15 +6,15 @@
 <body>
     <%- include('partials/navbar') %>
 
-    <main class="main-content">
-        <div class="form-container container-wide">
-            <h1 class="form-title">User Management</h1>
+    <main class="section">
+        <div class="container">
+            <h1 class="mb-lg">User Management</h1>
             <%- include('partials/messages') %>
 
             <!-- Create New User Form -->
-            <div class="info-box">
-                <h2 class="section-title">Add New Admin User</h2>
-                <form action="/admin/users" method="POST">
+            <div class="card mb-xl">
+                <h2 class="card-title">Add New Admin User</h2>
+                <form action="/admin/users" method="POST" class="form">
                     <div class="form-group">
                         <label for="username" class="form-label">Username</label>
                         <input
@@ -26,7 +26,7 @@
                             pattern="[a-zA-Z0-9_-]+"
                             required
                         >
-                        <small class="form-help-small">Letters, numbers, underscores, and hyphens only</small>
+                        <p class="small muted mt-sm">Letters, numbers, underscores, and hyphens only</p>
                     </div>
                     <div class="form-group">
                         <label for="password" class="form-label">Password</label>
@@ -38,7 +38,7 @@
                             minlength="6"
                             required
                         >
-                        <small class="form-help-small">Minimum 6 characters</small>
+                        <p class="small muted mt-sm">Minimum 6 characters</p>
                     </div>
                     <div class="form-group">
                         <label for="password_confirm" class="form-label">Confirm Password</label>
@@ -51,15 +51,15 @@
                             required
                         >
                     </div>
-                    <button type="submit" class="btn">Create Admin User</button>
+                    <button type="submit" class="btn btn-primary">Create Admin User</button>
                 </form>
             </div>
 
             <!-- Users List -->
             <% if (users && users.length > 0) { %>
-                <h2 class="section-title">Existing Users</h2>
+                <h2 class="mb-base">Existing Users</h2>
                 <div class="table-wrapper">
-                    <table class="data-table">
+                    <table class="table">
                         <thead>
                             <tr>
                                 <th>Username</th>
@@ -88,38 +88,40 @@
                                     </td>
                                     <td><%= new Date(user.created_at).toLocaleDateString() %></td>
                                     <td>
-                                        <!-- Edit Button -->
-                                        <button
-                                            type="button"
-                                            class="btn btn-small mr-half"
-                                            onclick="toggleEditForm(<%= user.id %>)"
-                                        >
-                                            Edit
-                                        </button>
+                                        <div class="flex gap-sm">
+                                            <!-- Edit Button -->
+                                            <button
+                                                type="button"
+                                                class="btn btn-sm"
+                                                onclick="toggleEditForm(<%= user.id %>)"
+                                            >
+                                                Edit
+                                            </button>
 
-                                        <!-- Delete Button -->
-                                        <% if (user.id !== currentUserId) { %>
-                                            <form action="/admin/users/<%= user.id %>/delete" method="POST" class="inline-form">
-                                                <button
-                                                    type="submit"
-                                                    class="btn btn-small"
-                                                    onclick="return confirm('Are you sure you want to delete user <%= user.username %>? This action cannot be undone.')"
-                                                >
+                                            <!-- Delete Button -->
+                                            <% if (user.id !== currentUserId) { %>
+                                                <form action="/admin/users/<%= user.id %>/delete" method="POST">
+                                                    <button
+                                                        type="submit"
+                                                        class="btn btn-sm btn-error"
+                                                        onclick="return confirm('Are you sure you want to delete user <%= user.username %>? This action cannot be undone.')"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </form>
+                                            <% } else { %>
+                                                <button class="btn btn-sm" disabled title="Cannot delete yourself">
                                                     Delete
                                                 </button>
-                                            </form>
-                                        <% } else { %>
-                                            <button class="btn btn-small" disabled title="Cannot delete yourself">
-                                                Delete
-                                            </button>
-                                        <% } %>
+                                            <% } %>
+                                        </div>
                                     </td>
                                 </tr>
                                 <!-- Inline Edit Form (hidden by default) -->
                                 <tr id="edit-form-<%= user.id %>" class="hidden">
                                     <td colspan="4">
-                                        <form action="/admin/users/<%= user.id %>/edit" method="POST" style="padding: 1rem; border: 1px solid white;">
-                                            <h3 class="section-title small-section-title">Edit User: <%= user.username %></h3>
+                                        <form action="/admin/users/<%= user.id %>/edit" method="POST" class="form p-base border">
+                                            <h3 class="mb-base">Edit User: <%= user.username %></h3>
 
                                             <div class="form-group">
                                                 <label for="edit-username-<%= user.id %>" class="form-label">Username</label>
@@ -144,7 +146,7 @@
                                                     minlength="6"
                                                     placeholder="Leave blank to keep current password"
                                                 >
-                                                <small class="form-help-small">Leave blank to keep current password</small>
+                                                <p class="small muted mt-sm">Leave blank to keep current password</p>
                                             </div>
 
                                             <div class="form-group">
@@ -158,11 +160,11 @@
                                                 >
                                             </div>
 
-                                            <div style="display: flex; gap: 0.5rem;">
-                                                <button type="submit" class="btn btn-small">Save Changes</button>
+                                            <div class="flex gap-sm">
+                                                <button type="submit" class="btn btn-sm">Save Changes</button>
                                                 <button
                                                     type="button"
-                                                    class="btn btn-small"
+                                                    class="btn btn-sm btn-secondary"
                                                     onclick="toggleEditForm(<%= user.id %>)"
                                                 >
                                                     Cancel
@@ -176,7 +178,7 @@
                     </table>
                 </div>
             <% } else { %>
-                <p class="text-center padding-2">No users found.</p>
+                <p class="text-center p-lg">No users found.</p>
             <% } %>
         </div>
     </main>

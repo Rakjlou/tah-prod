@@ -6,11 +6,11 @@
 <body>
     <%- include('partials/navbar') %>
 
-    <main class="main-content">
-        <div class="form-container">
-            <h1 class="form-title">Login</h1>
-            <%- include('partials/messages') %>
-            <form action="/login" method="POST">
+    <main class="section">
+        <div class="container">
+            <form action="/login" method="POST" class="form">
+                <h1 class="mb-lg">Login</h1>
+                <%- include('partials/messages') %>
                 <div class="form-group">
                     <label for="login" class="form-label">Login</label>
                     <input type="text" id="login" name="login" class="form-input" required>
@@ -19,7 +19,7 @@
                     <label for="password" class="form-label">Password</label>
                     <input type="password" id="password" name="password" class="form-input" required>
                 </div>
-                <button type="submit" class="btn">Submit</button>
+                <button type="submit" class="btn btn-primary">Submit</button>
             </form>
         </div>
     </main>

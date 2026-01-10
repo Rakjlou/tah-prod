@@ -1,10 +1,10 @@
 <nav class="navbar">
-    <div class="nav-container">
-        <a href="/" class="nav-brand">TAH PROD</a>
-        <div class="nav-links">
+    <div class="navbar-container">
+        <a href="/" class="navbar-brand">TAH PROD</a>
+        <ul class="nav-links">
             <% if (user) { %>
                 <% if (hasRole(ROLES.ADMIN)) { %>
-                    <a href="/bands" class="nav-link <%= req.path === '/bands' ? 'active' : '' %>">Bands</a>
+                    <li><a href="/bands" class="nav-link <%= req.path === '/bands' ? 'active' : '' %>">Bands</a></li>
                     <%
                     const adminDropdownItems = [
                         { name: 'Transactions', href: '/admin/transactions' },
@@ -13,14 +13,14 @@
                     ];
                     const dropdownCurrentPath = typeof req !== 'undefined' ? req.path : '';
                     %>
-                    <%- include('nav-dropdown', { items: adminDropdownItems, currentPath: dropdownCurrentPath }) %>
+                    <%- include('nav-dropdown', { items: adminDropdownItems, currentPath: dropdownCurrentPath, label: 'Admin' }) %>
                     <%
                     const adminToolsDropdownItems = [
                         { name: 'Tools', href: '/tools' },
                         { name: 'Invoices', href: '/admin/invoices' }
                     ];
                     %>
-                    <%- include('nav-dropdown', { items: adminToolsDropdownItems, currentPath: dropdownCurrentPath }) %>
+                    <%- include('nav-dropdown', { items: adminToolsDropdownItems, currentPath: dropdownCurrentPath, label: 'Tools' }) %>
                     <%
                     const configDropdownItems = [
                         { name: 'Config', href: '/config' },
@@ -28,9 +28,9 @@
                         { name: 'Users', href: '/admin/users' }
                     ];
                     %>
-                    <%- include('nav-dropdown', { items: configDropdownItems, currentPath: dropdownCurrentPath }) %>
+                    <%- include('nav-dropdown', { items: configDropdownItems, currentPath: dropdownCurrentPath, label: 'Config' }) %>
                 <% } else if (hasRole(ROLES.BAND)) { %>
-                    <a href="/transactions" class="nav-link <%= req.path === '/transactions' ? 'active' : '' %>">Transactions</a>
+                    <li><a href="/transactions" class="nav-link <%= req.path === '/transactions' ? 'active' : '' %>">Transactions</a></li>
                     <%
                     const bandToolsDropdownItems = [
                         { name: 'Tools', href: '/tools' },
@@ -38,14 +38,13 @@
                     ];
                     const bandDropdownCurrentPath = typeof req !== 'undefined' ? req.path : '';
                     %>
-                    <%- include('nav-dropdown', { items: bandToolsDropdownItems, currentPath: bandDropdownCurrentPath }) %>
-                    <a href="/account" class="nav-link <%= req.path === '/account' ? 'active' : '' %>">My Account</a>
+                    <%- include('nav-dropdown', { items: bandToolsDropdownItems, currentPath: bandDropdownCurrentPath, label: 'Tools' }) %>
+                    <li><a href="/account" class="nav-link <%= req.path === '/account' ? 'active' : '' %>">My Account</a></li>
                 <% } %>
-                <a href="/logout" class="nav-link">Disconnect</a>
+                <li><a href="/logout" class="nav-link">Disconnect</a></li>
             <% } else { %>
-                <a href="/login" class="nav-link">Login</a>
+                <li><a href="/login" class="nav-link">Login</a></li>
             <% } %>
-        </div>
+        </ul>
     </div>
 </nav>
-<script src="/js/nav-dropdown.js"></script>

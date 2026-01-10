@@ -6,14 +6,14 @@
 <body>
     <%- include('partials/navbar') %>
 
-    <main class="main-content">
-        <%- include('partials/messages') %>
-        <div class="form-container">
-            <h1 class="form-title">Error <%= statusCode || 500 %></h1>
-            <div class="error-message">
+    <main class="section">
+        <div class="container">
+            <h1 class="mb-lg">Error <%= statusCode || 500 %></h1>
+            <%- include('partials/messages') %>
+            <p class="mb-xl">
                 <%= message || 'An error occurred' %>
-            </div>
-            <div style="margin-top: 2rem; text-align: center;">
+            </p>
+            <div class="text-center">
                 <a href="/" class="btn">Back to home</a>
             </div>
         </div>

@@ -1,0 +1,274 @@
+/* ==========================================================================
+   TAH PROD Custom Styles
+   Application-specific styles not covered by Rakui CSS
+   ========================================================================== */
+
+/* ==========================================================================
+   Stat Grid (Reconciliation Dashboard)
+   ========================================================================== */
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.stat-success {
+    color: var(--color-success);
+}
+
+.stat-warning {
+    color: var(--color-error);
+}
+
+/* ==========================================================================
+   Reconciliation Table
+   ========================================================================== */
+.difference-cell.has-difference {
+    color: var(--color-error);
+    font-weight: bold;
+}
+
+.issue-badge {
+    display: inline-block;
+    padding: 0.2rem 0.5rem;
+    margin-right: 0.5rem;
+    border: 1px solid var(--color-error);
+    color: var(--color-error);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+}
+
+.direction-match {
+    color: var(--color-success);
+}
+
+.direction-mismatch {
+    color: var(--color-error);
+}
+
+.fully-allocated {
+    color: var(--color-error);
+    font-style: italic;
+}
+
+/* ==========================================================================
+   Qonto Integration Styles
+   ========================================================================== */
+.validation-status {
+    padding: 1rem;
+    border: var(--border-standard);
+    background-color: var(--color-bg);
+}
+
+.qonto-validation-status {
+    margin-bottom: 1.5rem;
+}
+
+.validation-summary {
+    font-size: 0.95rem;
+    line-height: 1.8;
+}
+
+.qonto-linked-transactions,
+.linked-transactions {
+    margin-bottom: 1.5rem;
+}
+
+.qonto-small-section-title {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.qonto-unlink-btn {
+    background-color: var(--color-error);
+    border-color: var(--color-error);
+    color: #fff;
+}
+
+.qonto-unlink-btn:hover {
+    background-color: #d32f2f;
+    border-color: #d32f2f;
+}
+
+.qonto-loading,
+.qonto-error {
+    margin-top: 1rem;
+}
+
+.qonto-error {
+    color: var(--color-error);
+}
+
+.qonto-matches {
+    margin-top: 1.5rem;
+}
+
+.qonto-link-btn {
+    margin-top: 1rem;
+}
+
+.qonto-help-text {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: var(--color-muted);
+}
+
+.qonto-checkbox-header {
+    width: 50px;
+}
+
+.qonto-row-disabled {
+    opacity: 0.5;
+}
+
+.qonto-available-display {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.qonto-available-primary {
+    font-weight: normal;
+}
+
+.qonto-amount-secondary {
+    color: var(--color-muted);
+    font-size: 0.85em;
+}
+
+.qonto-linked-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+.qonto-link-badge {
+    color: var(--color-fg);
+    text-decoration: none;
+    border-bottom: 1px solid var(--color-fg);
+}
+
+.qonto-link-badge:hover {
+    background-color: var(--color-fg);
+    color: var(--color-bg);
+}
+
+/* ==========================================================================
+   Invoice Form Styles
+   ========================================================================== */
+.invoice-item {
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: var(--border-standard);
+    background-color: var(--color-accent);
+}
+
+.invoice-item:last-child {
+    margin-bottom: 0;
+}
+
+.form-group-half {
+    flex: 1;
+    min-width: 150px;
+}
+
+.form-group-flex {
+    flex: 2;
+    min-width: 200px;
+}
+
+.form-group-small {
+    flex: 0 0 100px;
+}
+
+.form-group-action {
+    flex: 0 0 40px;
+    display: flex;
+    align-items: flex-end;
+}
+
+.btn-remove-item {
+    padding: 0.5rem 0.75rem;
+    background-color: var(--color-error);
+    color: #fff;
+    border: 1px solid var(--color-error);
+}
+
+.btn-remove-item:hover {
+    background-color: #d32f2f;
+    color: #fff;
+}
+
+.invoice-total-row {
+    text-align: right;
+    font-size: 1.2rem;
+    padding: 1rem;
+    margin-top: 1rem;
+    border-top: var(--border-standard);
+}
+
+.item-total {
+    display: inline-block;
+    min-width: 100px;
+    text-align: right;
+}
+
+/* Payment Conditions Section */
+#payment-conditions-section {
+    margin-left: 20px;
+    padding-left: 20px;
+    border-left: var(--border-standard);
+}
+
+.condition-text {
+    margin-top: 8px;
+    margin-left: 24px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    cursor: pointer;
+    margin: 0;
+}
+
+/* ==========================================================================
+   Invoice Detail Styles
+   ========================================================================== */
+.detail-row {
+    margin-bottom: 0.75rem;
+}
+
+.detail-label {
+    font-weight: normal;
+    margin-right: 0.5rem;
+}
+
+.preformatted-text {
+    white-space: pre-wrap;
+}
+
+/* ==========================================================================
+   Table Enhancements
+   ========================================================================== */
+.row-warning {
+    color: var(--color-warning);
+}
+
+.numeric {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   Active State for Filter Buttons
+   ========================================================================== */
+.btn.active {
+    text-decoration: underline;
+}

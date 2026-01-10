@@ -1,6 +1,6 @@
 <% if (isAdmin) { %>
-<div class="info-box">
-    <h2 class="section-title">Link to Bank Transactions (Qonto)</h2>
+<div class="card mb-lg">
+    <h2 class="card-title">Link to Bank Transactions (Qonto)</h2>
 
     <!-- Validation Status -->
     <div id="validation-status" class="validation-status qonto-validation-status">
@@ -37,7 +37,7 @@
         <div class="linked-transactions qonto-linked-transactions">
             <h3 class="qonto-small-section-title">Currently Linked:</h3>
             <div class="table-wrapper">
-            <table class="data-table">
+            <table class="table">
                 <thead>
                     <tr>
                         <th>Date</th>
@@ -60,7 +60,7 @@
                             <td><%= link.qonto_label || '-' %></td>
                             <td><%= link.qonto_reference || '-' %></td>
                             <td>
-                                <button type="button" class="btn btn-small qonto-unlink-btn" onclick="unlinkQonto(<%= link.id %>)">
+                                <button type="button" class="btn btn-sm qonto-unlink-btn" onclick="unlinkQonto(<%= link.id %>)">
                                     Unlink
                                 </button>
                             </td>
@@ -102,7 +102,7 @@
     <!-- Template for Qonto transaction table -->
     <template id="qonto-table-template">
         <div class="table-wrapper">
-            <table class="data-table">
+            <table class="table">
                 <thead>
                     <tr>
                         <th class="qonto-checkbox-header"><input type="checkbox" id="select-all-qonto" onclick="toggleSelectAll()"></th>

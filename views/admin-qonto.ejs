@@ -6,21 +6,21 @@
 <body>
     <%- include('partials/navbar') %>
 
-    <main class="main-content">
-        <div class="form-container container-full-wide">
-            <h1 class="form-title">Qonto Transactions</h1>
+    <main class="section">
+        <div class="container">
+            <h1 class="mb-lg">Qonto Transactions</h1>
             <%- include('partials/messages') %>
 
-            <div class="info-box">
-                <p><strong>Total cached transactions:</strong> <%= qontoTransactions.length %></p>
-                <p class="qonto-partial-amount">This panel shows all Qonto transactions stored in the local cache.</p>
+            <div class="card mb-lg">
+                <p class="mb-sm"><strong>Total cached transactions:</strong> <%= qontoTransactions.length %></p>
+                <p class="small muted">This panel shows all Qonto transactions stored in the local cache.</p>
             </div>
 
             <% if (qontoTransactions.length === 0) { %>
-                <p class="section-spacing">No Qonto transactions in cache. Search for transactions from the transaction detail pages to populate the cache.</p>
+                <p class="mb-lg">No Qonto transactions in cache. Search for transactions from the transaction detail pages to populate the cache.</p>
             <% } else { %>
                 <div class="table-wrapper">
-                <table class="data-table">
+                <table class="table">
                     <thead>
                         <tr>
                             <th>Date</th>
@@ -65,7 +65,7 @@
                                             <% }); %>
                                         </div>
                                     <% } else { %>
-                                        <span class="qonto-partial-amount">Not linked</span>
+                                        <span class="small muted">Not linked</span>
                                     <% } %>
                                 </td>
                             </tr>

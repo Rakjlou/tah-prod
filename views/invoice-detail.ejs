@@ -8,9 +8,9 @@
 <body>
     <%- include('partials/navbar') %>
 
-    <main class="main-content">
-        <div class="form-container">
-            <h1 class="form-title">Invoice <%= invoice.invoice_number %></h1>
+    <main class="section">
+        <div class="container">
+            <h1 class="mb-lg">Invoice <%= invoice.invoice_number %></h1>
             <%- include('partials/messages') %>
 
             <%
@@ -19,28 +19,28 @@
             %>
 
             <!-- Invoice Status -->
-            <div class="info-box">
-                <div class="flex flex-justify-between flex-align-center">
+            <div class="card mb-lg">
+                <div class="flex justify-between items-center flex-wrap gap-base">
                     <div>
-                        <p><strong>Number:</strong> <%= invoice.invoice_number %></p>
-                        <p><strong>Band:</strong> <%= invoice.band_name || band.name %></p>
-                        <p><strong>Status:</strong>
+                        <p class="mb-sm"><strong>Number:</strong> <%= invoice.invoice_number %></p>
+                        <p class="mb-sm"><strong>Band:</strong> <%= invoice.band_name || band.name %></p>
+                        <p class="mb-sm"><strong>Status:</strong>
                             <% if (invoice.status === 'draft') { %>
-                                <span class="status-badge status-badge-draft">DRAFT</span>
+                                <span class="badge">DRAFT</span>
                             <% } else if (invoice.status === 'sent') { %>
-                                <span class="status-badge status-badge-sent">SENT</span>
+                                <span class="badge badge-warning">SENT</span>
                             <% } else if (invoice.status === 'paid') { %>
-                                <span class="status-badge status-badge-paid">PAID</span>
+                                <span class="badge badge-success">PAID</span>
                             <% } else if (invoice.status === 'cancelled') { %>
-                                <span class="status-badge status-badge-cancelled">CANCELLED</span>
+                                <span class="badge badge-error">CANCELLED</span>
                             <% } %>
                         </p>
-                        <p><strong>Issue Date:</strong> <%= new Date(invoice.issue_date).toLocaleDateString('en-US') %></p>
+                        <p class="mb-sm"><strong>Issue Date:</strong> <%= new Date(invoice.issue_date).toLocaleDateString('en-US') %></p>
                         <% if (invoice.service_date) { %>
                             <p><strong>Service Date:</strong> <%= new Date(invoice.service_date).toLocaleDateString('en-US') %></p>
                         <% } %>
                     </div>
-                    <div class="flex flex-column flex-gap-half">
+                    <div class="flex flex-col gap-sm">
                         <button type="button" class="btn" onclick="generatePDF()">Download PDF</button>
                         <% if (canEdit) { %>
                             <a href="<%= urlPrefix %>/<%= invoice.id %>/edit" class="btn btn-secondary">Edit</a>
@@ -50,8 +50,8 @@
             </div>
 
             <!-- Client Information -->
-            <div class="info-box">
-                <h2 class="section-title">Client</h2>
+            <div class="card mb-lg">
+                <h2 class="card-title">Client</h2>
                 <p><strong><%= invoice.client_name %></strong></p>
                 <p class="preformatted-text"><%= invoice.client_address %></p>
                 <% if (invoice.client_siret) { %>
@@ -60,10 +60,10 @@
             </div>
 
             <!-- Line Items -->
-            <div class="info-box">
-                <h2 class="section-title">Services</h2>
+            <div class="card mb-lg">
+                <h2 class="card-title">Services</h2>
                 <div class="table-wrapper">
-                    <table class="data-table">
+                    <table class="table">
                         <thead>
                             <tr>
                                 <th>Description</th>
@@ -93,15 +93,15 @@
             </div>
 
             <% if (invoice.notes) { %>
-                <div class="info-box">
-                    <h2 class="section-title">Notes</h2>
+                <div class="card mb-lg">
+                    <h2 class="card-title">Notes</h2>
                     <p class="preformatted-text"><%= invoice.notes %></p>
                 </div>
             <% } %>
 
             <% if (invoice.payment_delay_text || invoice.late_penalty_text || invoice.recovery_fee_text) { %>
-                <div class="info-box">
-                    <h2 class="section-title">Payment Conditions</h2>
+                <div class="card mb-lg">
+                    <h2 class="card-title">Payment Conditions</h2>
                     <% if (invoice.payment_delay_text) { %>
                         <div class="detail-row">
                             <span class="detail-label">Payment Delay:</span>
@@ -125,17 +125,17 @@
 
             <!-- Status Actions -->
             <% if (invoice.status === 'draft') { %>
-                <div class="info-box">
-                    <h2 class="section-title">Actions</h2>
-                    <form action="<%= urlPrefix %>/<%= invoice.id %>/status" method="POST" class="inline-form">
+                <div class="card mb-lg">
+                    <h2 class="card-title">Actions</h2>
+                    <form action="<%= urlPrefix %>/<%= invoice.id %>/status" method="POST" >
                         <input type="hidden" name="status" value="sent">
                         <button type="submit" class="btn">Mark as Sent</button>
                     </form>
                 </div>
             <% } else if (invoice.status === 'sent' && isAdmin) { %>
-                <div class="info-box">
-                    <h2 class="section-title">Actions</h2>
-                    <form action="<%= urlPrefix %>/<%= invoice.id %>/status" method="POST" class="inline-form">
+                <div class="card mb-lg">
+                    <h2 class="card-title">Actions</h2>
+                    <form action="<%= urlPrefix %>/<%= invoice.id %>/status" method="POST" >
                         <input type="hidden" name="status" value="paid">
                         <button type="submit" class="btn">Mark as Paid</button>
                     </form>
@@ -144,13 +144,13 @@
 
             <!-- Create Transaction -->
             <% if (!invoice.transaction_id && (invoice.status === 'sent' || invoice.status === 'paid')) { %>
-                <div class="info-box">
-                    <h2 class="section-title">Create Transaction</h2>
-                    <p class="mb-1">Create an income transaction from this invoice.</p>
+                <div class="card mb-lg">
+                    <h2 class="card-title">Create Transaction</h2>
+                    <p class="mb-lg">Create an income transaction from this invoice.</p>
                     <form action="<%= urlPrefix %>/<%= invoice.id %>/create-transaction" method="POST">
                         <div class="form-group">
                             <label for="category_id" class="form-label">Category *</label>
-                            <select id="category_id" name="category_id" class="form-input" required>
+                            <select id="category_id" name="category_id" class="form-select" required>
                                 <option value="">Select a category</option>
                                 <% categories.filter(c => c.type === 'income' || c.type === 'both').forEach(cat => { %>
                                     <option value="<%= cat.id %>"><%= cat.name %></option>
@@ -161,17 +161,17 @@
                     </form>
                 </div>
             <% } else if (invoice.transaction_id) { %>
-                <div class="info-box">
-                    <h2 class="section-title">Linked Transaction</h2>
+                <div class="card mb-lg">
+                    <h2 class="card-title">Linked Transaction</h2>
                     <p>This invoice is linked to a transaction.</p>
-                    <a href="<%= isAdmin ? '/admin/transactions/' : '/transactions/' %><%= invoice.transaction_id %>" class="btn btn-small">View Transaction</a>
+                    <a href="<%= isAdmin ? '/admin/transactions/' : '/transactions/' %><%= invoice.transaction_id %>" class="btn btn-sm">View Transaction</a>
                 </div>
             <% } %>
 
             <!-- Delete -->
             <% if (canDelete) { %>
-                <div class="info-box">
-                    <h2 class="section-title">Delete</h2>
+                <div class="card mb-lg">
+                    <h2 class="card-title">Delete</h2>
                     <form action="<%= urlPrefix %>/<%= invoice.id %>/delete" method="POST">
                         <button type="submit" class="btn" onclick="return confirm('Delete this invoice?')">
                             Delete Invoice
@@ -180,7 +180,7 @@
                 </div>
             <% } %>
 
-            <div class="mt-2">
+            <div class="mt-xl">
                 <a href="<%= urlPrefix %>" class="btn btn-secondary">Back to Invoices</a>
             </div>
         </div>

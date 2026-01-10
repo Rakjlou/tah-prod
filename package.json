@@ -27,6 +27,7 @@
         "jspdf": "^3.0.4",
         "jspdf-autotable": "^5.0.2",
         "multer": "^2.0.2",
+        "rakui-css": "^1.0.2",
         "sqlite3": "^5.1.7"
     },
     "devDependencies": {

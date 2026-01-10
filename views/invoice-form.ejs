@@ -6,17 +6,18 @@
 <body>
     <%- include('partials/navbar') %>
 
-    <main class="main-content">
-        <div class="form-container">
-            <h1 class="form-title"><%= isEdit ? 'Edit Invoice' : 'New Invoice' %></h1>
+    <main class="section">
+        <div class="container">
+            <h1 class="mb-lg"><%= isEdit ? 'Edit Invoice' : 'New Invoice' %></h1>
             <%- include('partials/messages') %>
 
-            <form action="<%= isEdit ? urlPrefix + '/' + invoice.id + '/edit' : urlPrefix %>" method="POST" id="invoice-form">
+            <div class="card mb-xl">
+            <form action="<%= isEdit ? urlPrefix + '/' + invoice.id + '/edit' : urlPrefix %>" method="POST" id="invoice-form" class="form">
 
                 <% if (isAdmin && !isEdit) { %>
                     <div class="form-group">
                         <label for="band_id" class="form-label">Band *</label>
-                        <select id="band_id" name="band_id" class="form-input" required>
+                        <select id="band_id" name="band_id" class="form-select" required>
                             <option value="">Select a band</option>
                             <% bands.forEach(b => { %>
                                 <option value="<%= b.id %>"><%= b.name %></option>
@@ -25,7 +26,7 @@
                     </div>
                 <% } %>
 
-                <h2 class="section-title">Client Information</h2>
+                <h2 class="card-title">Client Information</h2>
 
                 <div class="form-group">
                     <label for="client_name" class="form-label">Client Name *</label>
@@ -45,7 +46,7 @@
                     <textarea
                         id="client_address"
                         name="client_address"
-                        class="form-input"
+                        class="form-textarea"
                         rows="3"
                         placeholder="Full address"
                         required
@@ -64,7 +65,7 @@
                     >
                 </div>
 
-                <h2 class="section-title config-section-title">Dates</h2>
+                <h2 class="card-title mt-xl">Dates</h2>
 
                 <div class="form-row">
                     <div class="form-group form-group-half">
@@ -90,7 +91,7 @@
                     </div>
                 </div>
 
-                <h2 class="section-title config-section-title">Services</h2>
+                <h2 class="card-title mt-xl">Services</h2>
 
                 <div id="items-container">
                     <% if (invoice && invoice.items && invoice.items.length > 0) { %>
@@ -137,7 +138,7 @@
                                         <span class="item-total"><%= item.total.toFixed(2) %> EUR</span>
                                     </div>
                                     <div class="form-group form-group-action">
-                                        <button type="button" class="btn btn-small btn-remove-item" onclick="removeItem(this)">X</button>
+                                        <button type="button" class="btn btn-sm btn-remove-item" onclick="removeItem(this)">X</button>
                                     </div>
                                 </div>
                             </div>
@@ -184,35 +185,35 @@
                                     <span class="item-total">0.00 EUR</span>
                                 </div>
                                 <div class="form-group form-group-action">
-                                    <button type="button" class="btn btn-small btn-remove-item" onclick="removeItem(this)" style="visibility: hidden;">X</button>
+                                    <button type="button" class="btn btn-sm btn-remove-item" onclick="removeItem(this)" style="visibility: hidden;">X</button>
                                 </div>
                             </div>
                         </div>
                     <% } %>
                 </div>
 
-                <div class="mb-1">
-                    <button type="button" class="btn btn-secondary btn-small" onclick="addItem()">+ Add Line Item</button>
+                <div class="mb-lg">
+                    <button type="button" class="btn btn-sm btn-secondary" onclick="addItem()">+ Add Line Item</button>
                 </div>
 
                 <div class="invoice-total-row">
                     <strong>TOTAL: <span id="invoice-total"><%= invoice ? invoice.total_amount.toFixed(2) : '0.00' %></span> EUR</strong>
                 </div>
 
-                <h2 class="section-title config-section-title">Notes</h2>
+                <h2 class="card-title mt-xl">Notes</h2>
 
                 <div class="form-group">
                     <label for="notes" class="form-label">Remarks (optional)</label>
                     <textarea
                         id="notes"
                         name="notes"
-                        class="form-input"
+                        class="form-textarea"
                         rows="2"
                         placeholder="Internal notes or comments for client"
                     ><%= invoice && invoice.notes ? invoice.notes : '' %></textarea>
                 </div>
 
-                <h2 class="section-title config-section-title">Payment Conditions</h2>
+                <h2 class="card-title mt-xl">Payment Conditions</h2>
 
                 <div class="form-group">
                     <label class="checkbox-label">
@@ -227,7 +228,7 @@
                             <input type="checkbox" class="payment-condition-toggle" id="enable_payment_delay" name="enable_payment_delay">
                             Payment delay
                         </label>
-                        <textarea id="payment_delay_text" name="payment_delay_text" class="form-input condition-text" rows="2" style="display: none;"></textarea>
+                        <textarea id="payment_delay_text" name="payment_delay_text" class="form-textarea condition-text" rows="2" style="display: none;"></textarea>
                     </div>
 
                     <div class="form-group">
@@ -235,7 +236,7 @@
                             <input type="checkbox" class="payment-condition-toggle" id="enable_late_penalty" name="enable_late_penalty">
                             Late penalty rate
                         </label>
-                        <textarea id="late_penalty_text" name="late_penalty_text" class="form-input condition-text" rows="2" style="display: none;"></textarea>
+                        <textarea id="late_penalty_text" name="late_penalty_text" class="form-textarea condition-text" rows="2" style="display: none;"></textarea>
                     </div>
 
                     <div class="form-group">
@@ -243,15 +244,15 @@
                             <input type="checkbox" class="payment-condition-toggle" id="enable_recovery_fee" name="enable_recovery_fee">
                             Recovery fee
                         </label>
-                        <textarea id="recovery_fee_text" name="recovery_fee_text" class="form-input condition-text" rows="2" style="display: none;"></textarea>
+                        <textarea id="recovery_fee_text" name="recovery_fee_text" class="form-textarea condition-text" rows="2" style="display: none;"></textarea>
                     </div>
                 </div>
 
                 <% if (isEdit && isAdmin) { %>
-                    <h2 class="section-title config-section-title">Status</h2>
+                    <h2 class="card-title mt-xl">Status</h2>
                     <div class="form-group">
                         <label for="status" class="form-label">Invoice Status</label>
-                        <select id="status" name="status" class="form-input">
+                        <select id="status" name="status" class="form-select">
                             <option value="draft" <%= invoice.status === 'draft' ? 'selected' : '' %>>Draft</option>
                             <option value="sent" <%= invoice.status === 'sent' ? 'selected' : '' %>>Sent</option>
                             <option value="paid" <%= invoice.status === 'paid' ? 'selected' : '' %>>Paid</option>
@@ -260,10 +261,11 @@
                     </div>
                 <% } %>
 
-                <button type="submit" class="btn"><%= isEdit ? 'Save Changes' : 'Create Invoice' %></button>
+                <button type="submit" class="btn btn-primary"><%= isEdit ? 'Save Changes' : 'Create Invoice' %></button>
             </form>
+            </div>
 
-            <div class="mt-2">
+            <div class="mt-xl">
                 <a href="<%= isEdit ? urlPrefix + '/' + invoice.id : urlPrefix %>" class="btn btn-secondary">Cancel</a>
             </div>
         </div>
@@ -320,7 +322,7 @@
                         <span class="item-total">0.00 EUR</span>
                     </div>
                     <div class="form-group form-group-action">
-                        <button type="button" class="btn btn-small btn-remove-item" onclick="removeItem(this)">X</button>
+                        <button type="button" class="btn btn-sm btn-remove-item" onclick="removeItem(this)">X</button>
                     </div>
                 </div>
             `;

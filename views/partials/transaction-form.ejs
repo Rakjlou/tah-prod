@@ -1,15 +1,15 @@
-<form id="transaction-form" action="<%= formAction %>" method="POST"<% if (!transaction) { %> enctype="multipart/form-data"<% } %>>
+<form id="transaction-form" action="<%= formAction %>" method="POST" class="form"<% if (!transaction) { %> enctype="multipart/form-data"<% } %>>
     <% if (typeof canEditStatus !== 'undefined' && canEditStatus && transaction) { %>
         <div class="form-group">
             <label class="form-label">Status</label>
-            <div class="radio-group">
-                <label class="radio-label">
-                    <input type="radio" name="status" value="pending" <%= transaction.status === 'pending' ? 'checked' : '' %> required>
-                    Pending
+            <div class="flex gap-lg">
+                <label class="form-check">
+                    <input type="radio" name="status" value="pending" class="form-check-input" <%= transaction.status === 'pending' ? 'checked' : '' %> required>
+                    <span class="form-check-label">Pending</span>
                 </label>
-                <label class="radio-label">
-                    <input type="radio" name="status" value="validated" <%= transaction.status === 'validated' ? 'checked' : '' %> required>
-                    Validated
+                <label class="form-check">
+                    <input type="radio" name="status" value="validated" class="form-check-input" <%= transaction.status === 'validated' ? 'checked' : '' %> required>
+                    <span class="form-check-label">Validated</span>
                 </label>
             </div>
         </div>
@@ -17,21 +17,21 @@
 
     <div class="form-group">
         <label class="form-label">Type</label>
-        <div class="radio-group">
-            <label class="radio-label">
-                <input type="radio" name="type" value="income" <%= transaction && transaction.type === 'income' ? 'checked' : '' %> required onchange="filterCategories()">
-                Income
+        <div class="flex gap-lg">
+            <label class="form-check">
+                <input type="radio" name="type" value="income" class="form-check-input" <%= transaction && transaction.type === 'income' ? 'checked' : '' %> required onchange="filterCategories()">
+                <span class="form-check-label">Income</span>
             </label>
-            <label class="radio-label">
-                <input type="radio" name="type" value="expense" <%= transaction && transaction.type === 'expense' ? 'checked' : '' %> <%= !transaction ? 'checked' : '' %> required onchange="filterCategories()">
-                Expense
+            <label class="form-check">
+                <input type="radio" name="type" value="expense" class="form-check-input" <%= transaction && transaction.type === 'expense' ? 'checked' : '' %> <%= !transaction ? 'checked' : '' %> required onchange="filterCategories()">
+                <span class="form-check-label">Expense</span>
             </label>
         </div>
     </div>
 
     <div class="form-group">
         <label for="category_id" class="form-label">Category</label>
-        <select id="category_id" name="category_id" class="form-input" required>
+        <select id="category_id" name="category_id" class="form-select" required>
             <option value="">Select a category</option>
             <% categories.forEach(category => { %>
                 <option
@@ -46,7 +46,7 @@
     </div>
 
     <div class="form-group">
-        <label for="amount" class="form-label">Amount (€)</label>
+        <label for="amount" class="form-label">Amount (&euro;)</label>
         <input
             type="number"
             id="amount"
@@ -69,9 +69,9 @@
                 class="form-input"
                 value="<%= transaction && transaction.transaction_date ? new Date(transaction.transaction_date).toISOString().split('T')[0] : '' %>"
             >
-            <label class="checkbox-label">
-                <input type="checkbox" id="clear_date" name="clear_date" value="true" onchange="toggleTransactionDate()">
-                Set as null (clear date)
+            <label class="form-check mt-sm">
+                <input type="checkbox" id="clear_date" name="clear_date" value="true" class="form-check-input" onchange="toggleTransactionDate()">
+                <span class="form-check-label">Set as null (clear date)</span>
             </label>
         </div>
     <% } %>
@@ -81,7 +81,7 @@
         <textarea
             id="description"
             name="description"
-            class="form-input form-textarea"
+            class="form-textarea"
             rows="4"
             minlength="5"
             required
@@ -99,13 +99,13 @@
                 multiple
                 accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
             >
-            <p class="form-help-small">
+            <p class="form-help small muted mt-sm">
                 You can also add documents later from the transaction details page.
             </p>
         </div>
     <% } %>
 
-    <button type="submit" class="btn" id="submit-btn">
+    <button type="submit" class="btn btn-primary" id="submit-btn">
         <%= transaction ? 'Update Transaction' : 'Create Transaction' %>
     </button>
 </form>

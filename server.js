@@ -33,6 +33,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Serve vendor libraries from node_modules
 app.use('/vendor/jspdf', express.static(path.join(__dirname, 'node_modules/jspdf/dist')));
 app.use('/vendor/jspdf-autotable', express.static(path.join(__dirname, 'node_modules/jspdf-autotable/dist')));
+app.use('/css/rakui.css', express.static(path.join(__dirname, 'node_modules/rakui-css/dist/rakui.css')));
 
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());

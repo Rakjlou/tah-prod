@@ -6,47 +6,49 @@
 <body>
     <%- include('partials/navbar') %>
 
-    <main class="main-content">
-        <div class="form-container container-wide">
-            <h1 class="form-title">Bands</h1>
+    <main class="section">
+        <div class="container">
+            <h1 class="mb-lg">Bands</h1>
             <%- include('partials/messages') %>
 
             <% if (!googleConfigured) { %>
-                <div class="info-box">
+                <div class="message message-info mb-xl">
                     <p>
-                        Google integration not configured yet. Please configure it in the <a href="/config" class="color-fg text-underlined">Config section</a> first.
+                        Google integration not configured yet. Please configure it in the <a href="/config">Config section</a> first.
                     </p>
                 </div>
             <% } else if (!isGoogleAuthenticated) { %>
-                <div class="info-box">
-                    <p>
+                <div class="card mb-xl">
+                    <p class="mb-base">
                         To create band spreadsheets, you need to authenticate with Google first.
                     </p>
-                    <a href="/auth/google" class="btn">
+                    <a href="/auth/google" class="btn btn-primary">
                         Authenticate with Google
                     </a>
                 </div>
             <% } %>
 
             <% if (googleConfigured && isGoogleAuthenticated) { %>
-            <form id="band-form" action="/bands" method="POST" class="info-box">
-                <h2 class="section-title">Add New Band</h2>
-                <div class="form-group">
-                    <label for="name" class="form-label">Band Name</label>
-                    <input type="text" id="name" name="name" class="form-input" required>
-                </div>
-                <div class="form-group">
-                    <label for="email" class="form-label">Contact Email</label>
-                    <input type="email" id="email" name="email" class="form-input" required>
-                </div>
-                <button type="submit" id="submit-btn" class="btn">Create Band</button>
-            </form>
+            <div class="card mb-xl">
+                <h2 class="card-title">Add New Band</h2>
+                <form id="band-form" action="/bands" method="POST" class="form">
+                    <div class="form-group">
+                        <label for="name" class="form-label">Band Name</label>
+                        <input type="text" id="name" name="name" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email" class="form-label">Contact Email</label>
+                        <input type="email" id="email" name="email" class="form-input" required>
+                    </div>
+                    <button type="submit" id="submit-btn" class="btn btn-primary">Create Band</button>
+                </form>
+            </div>
             <% } %>
 
             <% if (bands && bands.length > 0) { %>
-                <h2 class="section-title">Existing Bands</h2>
+                <h2 class="mb-lg">Existing Bands</h2>
                 <div class="table-wrapper">
-                    <table class="data-table">
+                    <table class="table">
                         <thead>
                             <tr>
                                 <th>Name</th>
@@ -70,12 +72,14 @@
                                     </td>
                                     <td><%= new Date(band.created_at).toLocaleDateString() %></td>
                                     <td>
-                                        <form action="/admin/bands/<%= band.id %>/reset-password" method="POST" class="inline-form mr-half">
-                                            <button type="submit" class="btn btn-small">Reset Password</button>
-                                        </form>
-                                        <form action="/admin/bands/<%= band.id %>/delete" method="POST" class="inline-form">
-                                            <button type="submit" class="btn btn-small" onclick="return confirm('Are you sure you want to delete <%= band.name %>? This will delete the band, user account, all transactions, and Google Drive folder. This action cannot be undone.')">Delete</button>
-                                        </form>
+                                        <div class="flex gap-sm flex-wrap">
+                                            <form action="/admin/bands/<%= band.id %>/reset-password" method="POST">
+                                                <button type="submit" class="btn btn-sm">Reset Password</button>
+                                            </form>
+                                            <form action="/admin/bands/<%= band.id %>/delete" method="POST">
+                                                <button type="submit" class="btn btn-sm btn-error" onclick="return confirm('Are you sure you want to delete <%= band.name %>? This will delete the band, user account, all transactions, and Google Drive folder. This action cannot be undone.')">Delete</button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             <% }); %>
@@ -83,7 +87,9 @@
                     </table>
                 </div>
             <% } else { %>
-                <p class="text-center padding-2">No bands created yet.</p>
+                <div class="empty-state">
+                    <p class="empty-state-text">No bands created yet.</p>
+                </div>
             <% } %>
         </div>
     </main>

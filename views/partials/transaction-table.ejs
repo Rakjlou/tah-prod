@@ -1,6 +1,6 @@
 <% if (transactions && transactions.length > 0) { %>
     <div class="table-wrapper">
-        <table class="data-table">
+        <table class="table table-clickable">
             <thead>
                 <tr>
                     <% if (showBandColumn) { %>
@@ -9,12 +9,12 @@
                     <th>Date</th>
                     <th>Category</th>
                     <th>Description</th>
-                    <th>Amount</th>
+                    <th class="numeric">Amount</th>
                 </tr>
             </thead>
             <tbody>
                 <% transactions.forEach(transaction => { %>
-                    <tr class="clickable-row <%= transaction.status === 'pending' ? 'transaction-row-pending' : '' %>" data-transaction-id="<%= transaction.id %>">
+                    <tr class="<%= transaction.status === 'pending' ? 'row-warning' : '' %>" data-transaction-id="<%= transaction.id %>">
                         <% if (showBandColumn) { %>
                             <td><%= transaction.band_name %></td>
                         <% } %>
@@ -34,14 +34,16 @@
                                 <%= transaction.description %>
                             <% } %>
                         </td>
-                        <td><%= transaction.type === 'expense' ? '-' : '' %><%= transaction.amount.toFixed(2) %> €</td>
+                        <td class="numeric"><%= transaction.type === 'expense' ? '-' : '' %><%= transaction.amount.toFixed(2) %> &euro;</td>
                     </tr>
                 <% }); %>
             </tbody>
         </table>
     </div>
 <% } else { %>
-    <p class="text-center padding-2">No transactions yet.</p>
+    <div class="empty-state">
+        <p class="empty-state-text">No transactions yet.</p>
+    </div>
 <% } %>
 
 <script src="/js/transaction-table.js"></script>
