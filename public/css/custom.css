@@ -54,40 +54,17 @@
 /* ==========================================================================
    Qonto Integration Styles
    ========================================================================== */
-.validation-status {
-    padding: 1rem;
-    border: var(--border-standard);
-    background-color: var(--color-bg);
-}
-
 .qonto-validation-status {
-    margin-bottom: 1.5rem;
+    /* Compact inline status */
 }
 
-.validation-summary {
-    font-size: 0.95rem;
-    line-height: 1.8;
-}
-
-.qonto-linked-transactions,
-.linked-transactions {
-    margin-bottom: 1.5rem;
+.qonto-linked-transactions {
+    /* Table container */
 }
 
 .qonto-small-section-title {
     font-size: 1rem;
     margin-bottom: 0.5rem;
-}
-
-.qonto-unlink-btn {
-    background-color: var(--color-error);
-    border-color: var(--color-error);
-    color: #fff;
-}
-
-.qonto-unlink-btn:hover {
-    background-color: #d32f2f;
-    border-color: #d32f2f;
 }
 
 .qonto-loading,
@@ -271,4 +248,44 @@
    ========================================================================== */
 .btn.active {
     text-decoration: underline;
+}
+
+/* ==========================================================================
+   Transaction Detail Page - Responsive Form Layout
+   ========================================================================== */
+
+/* Two-column grid for form rows */
+.form-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-lg);
+    width: 100%;
+}
+
+/* Ensure transaction form spans full width (override rakui max-width: 500px) */
+#transaction-form {
+    max-width: none;
+    width: 100%;
+}
+
+/* Collapse to single column on mobile */
+@media (max-width: 768px) {
+    .form-row-2 {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-base);
+    }
+}
+
+/* Text utilities */
+.text-muted {
+    color: var(--color-muted);
+}
+
+.text-sm {
+    font-size: 0.875rem;
+}
+
+/* Utility: remove margin */
+.m-0 {
+    margin: 0;
 }

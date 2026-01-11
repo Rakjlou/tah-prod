@@ -8,7 +8,6 @@
 
     <main class="section">
         <div class="container">
-            <h1 class="mb-lg">Transaction Details</h1>
             <%- include('partials/messages') %>
 
             <%
@@ -17,27 +16,20 @@
             const canDelete = isAdmin || transaction.status === 'pending';
             %>
 
-            <!-- Transaction Info -->
-            <div class="card mb-lg">
-                <p class="mb-sm"><strong>Transaction ID:</strong> <%= transaction.id %></p>
-                <p class="mb-sm"><strong>Band:</strong> <%= transaction.band_name %></p>
-                <p class="mb-sm"><strong>Status:</strong>
-                    <% if (transaction.status === 'pending') { %>
-                        <span class="badge badge-warning">PENDING</span>
-                    <% } else { %>
-                        <span class="badge badge-success">VALIDATED</span>
-                    <% } %>
-                </p>
-                <% if (transaction.transaction_date) { %>
-                    <p class="mb-sm"><strong>Transaction Date:</strong> <%= new Date(transaction.transaction_date).toLocaleDateString() %></p>
-                <% } %>
-                <p><strong>Created:</strong> <%= new Date(transaction.created_at).toLocaleDateString() %></p>
+            <!-- Header Row -->
+            <div class="flex items-center gap-base mb-base">
+                <a href="<%= backUrl %>" class="btn btn-sm btn-secondary">&larr; Back</a>
+                <h1 class="m-0">Transaction</h1>
             </div>
 
-            <!-- Edit Transaction Form -->
-            <% if (canEdit) { %>
-                <div class="card mb-lg">
-                    <h2 class="card-title">Edit Transaction</h2>
+            <!-- Metadata Row -->
+            <div class="mb-lg text-sm text-muted">
+                #<%= transaction.id %> · <%= transaction.status.toUpperCase() %> · <%= transaction.band_name %> · <%= new Date(transaction.created_at).toLocaleDateString() %>
+            </div>
+
+            <!-- Details Card -->
+            <div class="card mb-lg">
+                <% if (canEdit) { %>
                     <%- include('partials/transaction-form', {
                         formAction: urlPrefix + '/' + transaction.id + '/edit',
                         transaction: transaction,
@@ -45,19 +37,36 @@
                         canEditStatus: isAdmin,
                         canEditDate: canEdit
                     }) %>
-                </div>
-            <% } else { %>
-                <div class="card mb-lg">
-                    <h2 class="card-title">Transaction Details</h2>
-                    <p class="mb-sm"><strong>Type:</strong> <%= transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1) %></p>
-                    <p class="mb-sm"><strong>Category:</strong> <%= transaction.category_name %></p>
-                    <p class="mb-sm"><strong>Amount:</strong> <%= transaction.type === 'expense' ? '-' : '' %><%= transaction.amount.toFixed(2) %> &euro;</p>
-                    <p class="mb-sm"><strong>Description:</strong></p>
-                    <pre class="bg-accent p-base"><%= transaction.description %></pre>
-                </div>
-            <% } %>
+                <% } else { %>
+                    <!-- Read-only view with grid layout -->
+                    <div class="form-row-2 mb-base">
+                        <div>
+                            <p class="form-label">Type</p>
+                            <p><%= transaction.type.charAt(0).toUpperCase() + transaction.type.slice(1) %></p>
+                        </div>
+                        <div>
+                            <p class="form-label">Category</p>
+                            <p><%= transaction.category_name %></p>
+                        </div>
+                    </div>
+                    <div class="form-row-2 mb-base">
+                        <div>
+                            <p class="form-label">Amount</p>
+                            <p class="text-lg"><%= transaction.type === 'expense' ? '-' : '+' %><%= transaction.amount.toFixed(2) %> &euro;</p>
+                        </div>
+                        <div>
+                            <p class="form-label">Transaction Date</p>
+                            <p><%= transaction.transaction_date ? new Date(transaction.transaction_date).toLocaleDateString() : '-' %></p>
+                        </div>
+                    </div>
+                    <div class="mb-base">
+                        <p class="form-label">Description</p>
+                        <pre class="bg-accent p-base"><%= transaction.description %></pre>
+                    </div>
+                <% } %>
+            </div>
 
-            <!-- Qonto Transaction Linker (Admin Only) -->
+            <!-- Qonto Transaction Linker (Admin Only) - Moved up -->
             <%- include('partials/qonto-linker', {
                 isAdmin: isAdmin,
                 transaction: transaction,
@@ -67,7 +76,16 @@
 
             <!-- Document Management -->
             <div class="card mb-lg">
-                <h2 class="card-title">Documents</h2>
+                <% if (transaction.drive_folder_id) { %>
+                    <div class="flex items-center justify-between flex-wrap gap-base mb-base">
+                        <h2 class="card-title m-0">Documents</h2>
+                        <a href="https://drive.google.com/drive/folders/<%= transaction.drive_folder_id %>" target="_blank" class="btn btn-sm btn-secondary">
+                            View in Drive &rarr;
+                        </a>
+                    </div>
+                <% } else { %>
+                    <h2 class="card-title">Documents</h2>
+                <% } %>
 
                 <% if (!transaction.drive_folder_id) { %>
                     <!-- No folder exists -->
@@ -78,13 +96,13 @@
                 <% } else { %>
                     <!-- Folder exists - show documents -->
                     <% if (documents && documents.length > 0) { %>
-                        <div class="table-wrapper mb-lg">
+                        <div class="table-wrapper mb-base">
                             <table class="table">
                                 <thead>
                                     <tr>
                                         <th>Filename</th>
                                         <th>Uploaded</th>
-                                        <th>Actions</th>
+                                        <th></th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -97,7 +115,7 @@
                                             </td>
                                             <td><%= new Date(doc.uploaded_at).toLocaleDateString() %></td>
                                             <td>
-                                                <form action="<%= urlPrefix %>/<%= transaction.id %>/documents/<%= doc.id %>/delete" method="POST">
+                                                <form action="<%= urlPrefix %>/<%= transaction.id %>/documents/<%= doc.id %>/delete" method="POST" class="m-0">
                                                     <button type="submit" class="btn btn-sm btn-error" onclick="return confirm('Delete this document?')">Delete</button>
                                                 </form>
                                             </td>
@@ -107,51 +125,38 @@
                             </table>
                         </div>
                     <% } else { %>
-                        <p class="mb-lg">No documents uploaded yet.</p>
+                        <p class="mb-base text-muted">No documents yet.</p>
                     <% } %>
 
                     <!-- Upload form -->
-                    <h3 class="mb-base">Upload Documents</h3>
-                    <form id="upload-form" action="<%= urlPrefix %>/<%= transaction.id %>/documents" method="POST" enctype="multipart/form-data" class="form mb-lg">
-                        <div class="form-group">
-                            <label for="documents" class="form-label">Select files</label>
+                    <form id="upload-form" action="<%= urlPrefix %>/<%= transaction.id %>/documents" method="POST" enctype="multipart/form-data">
+                        <div class="flex items-center gap-base">
                             <input
                                 type="file"
                                 id="documents"
                                 name="documents"
                                 class="form-input"
+                                style="flex: 1;"
                                 multiple
                                 accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
                                 required
                             >
+                            <button type="submit" class="btn btn-primary" id="upload-btn">Upload</button>
                         </div>
-                        <button type="submit" class="btn btn-primary" id="upload-btn">Upload Documents</button>
                     </form>
-
-                    <!-- Link to folder -->
-                    <div class="border-t pt-base">
-                        <a href="https://drive.google.com/drive/folders/<%= transaction.drive_folder_id %>" target="_blank" class="btn btn-sm btn-secondary">
-                            View Folder in Google Drive
-                        </a>
-                    </div>
                 <% } %>
             </div>
 
             <!-- Delete Transaction -->
             <% if (canDelete) { %>
-                <div class="card mb-lg">
-                    <h2 class="card-title">Delete Transaction</h2>
-                    <form action="<%= urlPrefix %>/<%= transaction.id %>/delete" method="POST">
-                        <button type="submit" class="btn btn-error" onclick="return confirm('<%= transaction.status === 'validated' ? 'This transaction is validated. Really delete?' : 'Delete this transaction?' %>')">
+                <div class="text-right">
+                    <form action="<%= urlPrefix %>/<%= transaction.id %>/delete" method="POST" class="m-0">
+                        <button type="submit" class="btn btn-sm btn-error" onclick="return confirm('<%= transaction.status === 'validated' ? 'This transaction is validated. Really delete?' : 'Delete this transaction?' %>')">
                             Delete Transaction
                         </button>
                     </form>
                 </div>
             <% } %>
-
-            <div class="mt-xl">
-                <a href="<%= backUrl %>" class="btn btn-secondary">Back to All Transactions</a>
-            </div>
         </div>
     </main>
 

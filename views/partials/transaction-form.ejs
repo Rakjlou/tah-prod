@@ -1,81 +1,93 @@
 <form id="transaction-form" action="<%= formAction %>" method="POST" class="form"<% if (!transaction) { %> enctype="multipart/form-data"<% } %>>
-    <% if (typeof canEditStatus !== 'undefined' && canEditStatus && transaction) { %>
-        <div class="form-group">
-            <label class="form-label">Status</label>
+    <!-- Row 1: Type and Status (admin only) -->
+    <div class="form-row-2 mb-base">
+        <div class="form-group m-0">
+            <label class="form-label">Type</label>
             <div class="flex gap-lg">
                 <label class="form-check">
-                    <input type="radio" name="status" value="pending" class="form-check-input" <%= transaction.status === 'pending' ? 'checked' : '' %> required>
-                    <span class="form-check-label">Pending</span>
+                    <input type="radio" name="type" value="income" class="form-check-input" <%= transaction && transaction.type === 'income' ? 'checked' : '' %> required onchange="filterCategories()">
+                    <span class="form-check-label">Income</span>
                 </label>
                 <label class="form-check">
-                    <input type="radio" name="status" value="validated" class="form-check-input" <%= transaction.status === 'validated' ? 'checked' : '' %> required>
-                    <span class="form-check-label">Validated</span>
+                    <input type="radio" name="type" value="expense" class="form-check-input" <%= transaction && transaction.type === 'expense' ? 'checked' : '' %> <%= !transaction ? 'checked' : '' %> required onchange="filterCategories()">
+                    <span class="form-check-label">Expense</span>
+                </label>
+            </div>
+        </div>
+
+        <% if (typeof canEditStatus !== 'undefined' && canEditStatus && transaction) { %>
+            <div class="form-group m-0">
+                <label class="form-label">Status</label>
+                <div class="flex gap-lg">
+                    <label class="form-check">
+                        <input type="radio" name="status" value="pending" class="form-check-input" <%= transaction.status === 'pending' ? 'checked' : '' %> required>
+                        <span class="form-check-label">Pending</span>
+                    </label>
+                    <label class="form-check">
+                        <input type="radio" name="status" value="validated" class="form-check-input" <%= transaction.status === 'validated' ? 'checked' : '' %> required>
+                        <span class="form-check-label">Validated</span>
+                    </label>
+                </div>
+            </div>
+        <% } %>
+    </div>
+
+    <!-- Row 2: Category and Amount -->
+    <div class="form-row-2 mb-base">
+        <div class="form-group m-0">
+            <label for="category_id" class="form-label">Category</label>
+            <select id="category_id" name="category_id" class="form-select" required>
+                <option value="">Select a category</option>
+                <% categories.forEach(category => { %>
+                    <option
+                        value="<%= category.id %>"
+                        data-type="<%= category.type %>"
+                        <%= transaction && transaction.category_id === category.id ? 'selected' : '' %>
+                    >
+                        <%= category.name %>
+                    </option>
+                <% }); %>
+            </select>
+        </div>
+
+        <div class="form-group m-0">
+            <label for="amount" class="form-label">Amount (&euro;)</label>
+            <input
+                type="number"
+                id="amount"
+                name="amount"
+                class="form-input"
+                min="0.01"
+                step="0.01"
+                value="<%= transaction ? transaction.amount : '' %>"
+                required
+            >
+        </div>
+    </div>
+
+    <!-- Row 3: Transaction Date -->
+    <% if (typeof canEditDate !== 'undefined' && canEditDate) { %>
+        <div class="form-row-2 mb-base">
+            <div class="form-group m-0">
+                <label for="transaction_date" class="form-label">Transaction Date</label>
+                <input
+                    type="date"
+                    id="transaction_date"
+                    name="transaction_date"
+                    class="form-input"
+                    value="<%= transaction && transaction.transaction_date ? new Date(transaction.transaction_date).toISOString().split('T')[0] : '' %>"
+                >
+            </div>
+            <div class="form-group m-0 flex items-end">
+                <label class="form-check">
+                    <input type="checkbox" id="clear_date" name="clear_date" value="true" class="form-check-input" onchange="toggleTransactionDate()">
+                    <span class="form-check-label">No date (clear)</span>
                 </label>
             </div>
         </div>
     <% } %>
 
-    <div class="form-group">
-        <label class="form-label">Type</label>
-        <div class="flex gap-lg">
-            <label class="form-check">
-                <input type="radio" name="type" value="income" class="form-check-input" <%= transaction && transaction.type === 'income' ? 'checked' : '' %> required onchange="filterCategories()">
-                <span class="form-check-label">Income</span>
-            </label>
-            <label class="form-check">
-                <input type="radio" name="type" value="expense" class="form-check-input" <%= transaction && transaction.type === 'expense' ? 'checked' : '' %> <%= !transaction ? 'checked' : '' %> required onchange="filterCategories()">
-                <span class="form-check-label">Expense</span>
-            </label>
-        </div>
-    </div>
-
-    <div class="form-group">
-        <label for="category_id" class="form-label">Category</label>
-        <select id="category_id" name="category_id" class="form-select" required>
-            <option value="">Select a category</option>
-            <% categories.forEach(category => { %>
-                <option
-                    value="<%= category.id %>"
-                    data-type="<%= category.type %>"
-                    <%= transaction && transaction.category_id === category.id ? 'selected' : '' %>
-                >
-                    <%= category.name %>
-                </option>
-            <% }); %>
-        </select>
-    </div>
-
-    <div class="form-group">
-        <label for="amount" class="form-label">Amount (&euro;)</label>
-        <input
-            type="number"
-            id="amount"
-            name="amount"
-            class="form-input"
-            min="0.01"
-            step="0.01"
-            value="<%= transaction ? transaction.amount : '' %>"
-            required
-        >
-    </div>
-
-    <% if (typeof canEditDate !== 'undefined' && canEditDate) { %>
-        <div class="form-group">
-            <label for="transaction_date" class="form-label">Transaction Date</label>
-            <input
-                type="date"
-                id="transaction_date"
-                name="transaction_date"
-                class="form-input"
-                value="<%= transaction && transaction.transaction_date ? new Date(transaction.transaction_date).toISOString().split('T')[0] : '' %>"
-            >
-            <label class="form-check mt-sm">
-                <input type="checkbox" id="clear_date" name="clear_date" value="true" class="form-check-input" onchange="toggleTransactionDate()">
-                <span class="form-check-label">Set as null (clear date)</span>
-            </label>
-        </div>
-    <% } %>
-
+    <!-- Row 4: Description (full width) -->
     <div class="form-group">
         <label for="description" class="form-label">Description</label>
         <textarea
@@ -105,7 +117,7 @@
         </div>
     <% } %>
 
-    <button type="submit" class="btn btn-primary" id="submit-btn">
+    <button type="submit" class="btn btn-primary btn-block" id="submit-btn">
         <%= transaction ? 'Update Transaction' : 'Create Transaction' %>
     </button>
 </form>
