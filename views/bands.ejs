@@ -101,7 +101,8 @@
                                                         <td>Main</td>
                                                         <td><%= band.email %></td>
                                                         <td>
-                                                            <form action="/admin/bands/<%= band.id %>/reset-password" method="POST" style="display:inline;">
+                                                            <form action="/admin/bands/<%= band.id %>/reset-password" method="POST" class="flex gap-sm flex-wrap" style="align-items: center;">
+                                                                <input type="password" name="password" class="form-input form-input-sm" placeholder="Leave empty for random" style="width: 200px;">
                                                                 <button type="submit" class="btn btn-sm">Reset Password</button>
                                                             </form>
                                                         </td>
@@ -113,7 +114,8 @@
                                                             <td><%= cred.username %></td>
                                                             <td>
                                                                 <div class="flex gap-sm flex-wrap">
-                                                                    <form action="/admin/bands/<%= band.id %>/credentials/<%= cred.id %>/reset-password" method="POST" style="display:inline;">
+                                                                    <form action="/admin/bands/<%= band.id %>/credentials/<%= cred.id %>/reset-password" method="POST" class="flex gap-sm" style="align-items: center;">
+                                                                        <input type="password" name="password" class="form-input form-input-sm" placeholder="Leave empty for random" style="width: 200px;">
                                                                         <button type="submit" class="btn btn-sm">Reset Password</button>
                                                                     </form>
                                                                     <form action="/admin/bands/<%= band.id %>/credentials/<%= cred.id %>/delete" method="POST" style="display:inline;">
@@ -135,6 +137,10 @@
                                                 <div class="form-group" style="margin-bottom: 0;">
                                                     <label class="form-label">Username</label>
                                                     <input type="text" name="username" class="form-input" placeholder="e.g. manager@example.com" required>
+                                                </div>
+                                                <div class="form-group" style="margin-bottom: 0;">
+                                                    <label class="form-label">Password (optional)</label>
+                                                    <input type="password" name="password" class="form-input" placeholder="Leave empty for random">
                                                 </div>
                                                 <button type="submit" class="btn btn-sm btn-primary">Add</button>
                                             </form>

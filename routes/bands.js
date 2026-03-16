@@ -177,13 +177,18 @@ router.post('/admin/bands/:id/reset-password', requireAdmin, async (req, res) =>
         return res.redirect('/bands');
     }
 
-    const newPassword = generateRandomPassword();
+    const customPassword = req.body.password;
+    const newPassword = customPassword || generateRandomPassword();
     const hashedPassword = await hashPassword(newPassword);
     await updateUserPassword(band.user_id, hashedPassword);
 
     await sendPasswordResetEmail(band.email, newPassword);
 
-    req.flash.success(`Password reset for "${band.name}". New password: ${newPassword}`);
+    if (customPassword) {
+        req.flash.success(`Password reset for "${band.name}".`);
+    } else {
+        req.flash.success(`Password reset for "${band.name}". New password: ${newPassword}`);
+    }
     res.redirect('/bands');
 });
 
@@ -241,7 +246,7 @@ router.post('/admin/bands/:id/credentials', requireAdmin, async (req, res) => {
         return res.redirect('/bands');
     }
 
-    const { label, username } = req.body;
+    const { label, username, password: customPassword } = req.body;
 
     if (!label || !username) {
         req.flash.error('Label and username are required');
@@ -261,11 +266,15 @@ router.post('/admin/bands/:id/credentials', requireAdmin, async (req, res) => {
         return res.redirect('/bands');
     }
 
-    const password = generateRandomPassword();
+    const password = customPassword || generateRandomPassword();
     const hashedPassword = await hashPassword(password);
     await createBandCredential(bandId, label, username, hashedPassword);
 
-    req.flash.success(`Credential added for "${band.name}". Username: ${username} | Password: ${password}`);
+    if (customPassword) {
+        req.flash.success(`Credential added for "${band.name}". Username: ${username}`);
+    } else {
+        req.flash.success(`Credential added for "${band.name}". Username: ${username} | Password: ${password}`);
+    }
     res.redirect('/bands');
 });
 
@@ -282,11 +291,16 @@ router.post('/admin/bands/:id/credentials/:credId/reset-password', requireAdmin,
         return res.redirect('/bands');
     }
 
-    const newPassword = generateRandomPassword();
+    const customPassword = req.body.password;
+    const newPassword = customPassword || generateRandomPassword();
     const hashedPassword = await hashPassword(newPassword);
     await updateCredentialPassword(credId, hashedPassword);
 
-    req.flash.success(`Password reset for credential "${credential.label}". New password: ${newPassword}`);
+    if (customPassword) {
+        req.flash.success(`Password reset for credential "${credential.label}".`);
+    } else {
+        req.flash.success(`Password reset for credential "${credential.label}". New password: ${newPassword}`);
+    }
     res.redirect('/bands');
 });
 
