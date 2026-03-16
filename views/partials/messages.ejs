@@ -23,3 +23,24 @@
         <%= warningMessage %>
     </div>
 <% } %>
+<script>
+document.querySelectorAll('.message-success').forEach(function(el) {
+    var text = el.textContent;
+    var match = text.match(/Password:\s*(\S+)/);
+    if (match) {
+        var pw = match[1];
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-sm';
+        btn.style.marginLeft = '8px';
+        btn.textContent = 'Copy password';
+        btn.addEventListener('click', function() {
+            navigator.clipboard.writeText(pw).then(function() {
+                btn.textContent = 'Copied!';
+                setTimeout(function() { btn.textContent = 'Copy password'; }, 2000);
+            });
+        });
+        el.appendChild(btn);
+    }
+});
+</script>

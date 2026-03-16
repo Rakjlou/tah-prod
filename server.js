@@ -95,8 +95,14 @@ app.use(errorHandler);
 
 // Only start server if this file is run directly (not imported for testing)
 if (require.main === module) {
-    app.listen(PORT, () => {
-        console.log(`Server running on http://localhost:${PORT}`);
+    const { initializeDatabase } = require('./lib/db');
+    initializeDatabase().then(() => {
+        app.listen(PORT, () => {
+            console.log(`Server running on http://localhost:${PORT}`);
+        });
+    }).catch(err => {
+        console.error('Failed to initialize database:', err);
+        process.exit(1);
     });
 }
 

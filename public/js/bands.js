@@ -6,3 +6,10 @@ document.getElementById('band-form')?.addEventListener('submit', function(e) {
     submitBtn.disabled = true;
     submitBtn.textContent = 'Creating...';
 });
+
+function toggleCredentials(bandId) {
+    var row = document.getElementById('credentials-' + bandId);
+    if (row) {
+        row.style.display = row.style.display === 'none' ? '' : 'none';
+    }
+}

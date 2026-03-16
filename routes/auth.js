@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getUserByUsername } = require('../lib/db');
+const { getUserByUsername, getCredentialByUsername, getBandById, getUserById } = require('../lib/db');
 const { verifyPassword } = require('../lib/auth');
 
 /**
@@ -22,14 +22,27 @@ router.post('/login', async (req, res) => {
     const { login, password } = req.body;
 
     try {
-        const user = await getUserByUsername(login);
+        let user = await getUserByUsername(login);
+        let passwordHash = user ? user.password : null;
+
+        // Fallback: check band_credentials table
+        if (!user) {
+            const credential = await getCredentialByUsername(login);
+            if (credential) {
+                passwordHash = credential.password;
+                const band = await getBandById(credential.band_id);
+                if (band) {
+                    user = await getUserById(band.user_id);
+                }
+            }
+        }
 
         if (!user) {
             req.flash.error('Invalid credentials');
             return res.redirect('/login');
         }
 
-        const isValid = await verifyPassword(password, user.password);
+        const isValid = await verifyPassword(password, passwordHash);
 
         if (!isValid) {
             req.flash.error('Invalid credentials');

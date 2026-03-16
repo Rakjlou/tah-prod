@@ -7,7 +7,14 @@ const {
     getBandById,
     createUser,
     updateUserPassword,
-    deleteUser
+    deleteUser,
+    getUserByUsername,
+    getAllBandCredentials,
+    createBandCredential,
+    getCredentialByUsername,
+    getCredentialById,
+    updateCredentialPassword,
+    deleteBandCredential
 } = require('../lib/db');
 const { hashPassword } = require('../lib/auth');
 const { ROLES } = require('../lib/roles');
@@ -83,7 +90,15 @@ router.get('/auth/google/callback', requireAdmin, async (req, res) => {
  */
 router.get('/bands', requireAdmin, async (req, res) => {
     const bands = await getAllBands();
-    res.render('bands', { bands });
+    const allCredentials = await getAllBandCredentials();
+    const credentialsByBandId = {};
+    for (const cred of allCredentials) {
+        if (!credentialsByBandId[cred.band_id]) {
+            credentialsByBandId[cred.band_id] = [];
+        }
+        credentialsByBandId[cred.band_id].push(cred);
+    }
+    res.render('bands', { bands, credentialsByBandId });
 });
 
 /**
@@ -210,6 +225,87 @@ router.post('/admin/bands/:id/delete', requireAdmin, async (req, res) => {
         : `Band "${band.name}" has been deleted`;
 
     req.flash.success(successMessage);
+    res.redirect('/bands');
+});
+
+/**
+ * POST /admin/bands/:id/credentials
+ * Add a new credential to a band
+ */
+router.post('/admin/bands/:id/credentials', requireAdmin, async (req, res) => {
+    const bandId = req.params.id;
+    const band = await getBandById(bandId);
+
+    if (!band) {
+        req.flash.error('Band not found');
+        return res.redirect('/bands');
+    }
+
+    const { label, username } = req.body;
+
+    if (!label || !username) {
+        req.flash.error('Label and username are required');
+        return res.redirect('/bands');
+    }
+
+    // Check uniqueness across users and band_credentials
+    const existingUser = await getUserByUsername(username);
+    if (existingUser) {
+        req.flash.error('This username is already taken by an existing user');
+        return res.redirect('/bands');
+    }
+
+    const existingCred = await getCredentialByUsername(username);
+    if (existingCred) {
+        req.flash.error('This username is already taken by another credential');
+        return res.redirect('/bands');
+    }
+
+    const password = generateRandomPassword();
+    const hashedPassword = await hashPassword(password);
+    await createBandCredential(bandId, label, username, hashedPassword);
+
+    req.flash.success(`Credential added for "${band.name}". Username: ${username} | Password: ${password}`);
+    res.redirect('/bands');
+});
+
+/**
+ * POST /admin/bands/:id/credentials/:credId/reset-password
+ * Reset password for a band credential
+ */
+router.post('/admin/bands/:id/credentials/:credId/reset-password', requireAdmin, async (req, res) => {
+    const { id: bandId, credId } = req.params;
+    const credential = await getCredentialById(credId);
+
+    if (!credential || String(credential.band_id) !== String(bandId)) {
+        req.flash.error('Credential not found');
+        return res.redirect('/bands');
+    }
+
+    const newPassword = generateRandomPassword();
+    const hashedPassword = await hashPassword(newPassword);
+    await updateCredentialPassword(credId, hashedPassword);
+
+    req.flash.success(`Password reset for credential "${credential.label}". New password: ${newPassword}`);
+    res.redirect('/bands');
+});
+
+/**
+ * POST /admin/bands/:id/credentials/:credId/delete
+ * Delete a band credential
+ */
+router.post('/admin/bands/:id/credentials/:credId/delete', requireAdmin, async (req, res) => {
+    const { id: bandId, credId } = req.params;
+    const credential = await getCredentialById(credId);
+
+    if (!credential || String(credential.band_id) !== String(bandId)) {
+        req.flash.error('Credential not found');
+        return res.redirect('/bands');
+    }
+
+    await deleteBandCredential(credId);
+
+    req.flash.success(`Credential "${credential.label}" deleted`);
     res.redirect('/bands');
 });
 

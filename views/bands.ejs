@@ -76,8 +76,67 @@
                                             <form action="/admin/bands/<%= band.id %>/reset-password" method="POST">
                                                 <button type="submit" class="btn btn-sm">Reset Password</button>
                                             </form>
+                                            <button type="button" class="btn btn-sm" onclick="toggleCredentials(<%= band.id %>)">Manage Credentials</button>
                                             <form action="/admin/bands/<%= band.id %>/delete" method="POST">
                                                 <button type="submit" class="btn btn-sm btn-error" onclick="return confirm('Are you sure you want to delete <%= band.name %>? This will delete the band, user account, all transactions, and Google Drive folder. This action cannot be undone.')">Delete</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr id="credentials-<%= band.id %>" style="display: none;">
+                                    <td colspan="5">
+                                        <div class="card" style="margin: 0;">
+                                            <h3 class="mb-base">Credentials for <%= band.name %></h3>
+
+                                            <table class="table mb-base">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Label</th>
+                                                        <th>Username</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>Main</td>
+                                                        <td><%= band.email %></td>
+                                                        <td>
+                                                            <form action="/admin/bands/<%= band.id %>/reset-password" method="POST" style="display:inline;">
+                                                                <button type="submit" class="btn btn-sm">Reset Password</button>
+                                                            </form>
+                                                        </td>
+                                                    </tr>
+                                                    <% const bandCreds = credentialsByBandId[band.id] || []; %>
+                                                    <% bandCreds.forEach(cred => { %>
+                                                        <tr>
+                                                            <td><%= cred.label %></td>
+                                                            <td><%= cred.username %></td>
+                                                            <td>
+                                                                <div class="flex gap-sm flex-wrap">
+                                                                    <form action="/admin/bands/<%= band.id %>/credentials/<%= cred.id %>/reset-password" method="POST" style="display:inline;">
+                                                                        <button type="submit" class="btn btn-sm">Reset Password</button>
+                                                                    </form>
+                                                                    <form action="/admin/bands/<%= band.id %>/credentials/<%= cred.id %>/delete" method="POST" style="display:inline;">
+                                                                        <button type="submit" class="btn btn-sm btn-error" onclick="return confirm('Delete credential \'<%= cred.label %>\'?')">Delete</button>
+                                                                    </form>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    <% }); %>
+                                                </tbody>
+                                            </table>
+
+                                            <h4 class="mb-sm">Add Credential</h4>
+                                            <form action="/admin/bands/<%= band.id %>/credentials" method="POST" class="flex gap-sm flex-wrap" style="align-items: flex-end;">
+                                                <div class="form-group" style="margin-bottom: 0;">
+                                                    <label class="form-label">Label</label>
+                                                    <input type="text" name="label" class="form-input" placeholder="e.g. Manager" required>
+                                                </div>
+                                                <div class="form-group" style="margin-bottom: 0;">
+                                                    <label class="form-label">Username</label>
+                                                    <input type="text" name="username" class="form-input" placeholder="e.g. manager@example.com" required>
+                                                </div>
+                                                <button type="submit" class="btn btn-sm btn-primary">Add</button>
                                             </form>
                                         </div>
                                     </td>
