@@ -20,7 +20,10 @@ const adminInvoicesRoutes = require('./routes/admin-invoices');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const SESSION_SECRET = process.env.SESSION_SECRET || 'tahprod-secret-key-2025';
+if (!process.env.SESSION_SECRET && process.env.NODE_ENV !== 'test') {
+    throw new Error('SESSION_SECRET environment variable is required');
+}
+const SESSION_SECRET = process.env.SESSION_SECRET || 'test-only-session-secret';
 const SESSION_MAX_AGE = parseInt(process.env.SESSION_MAX_AGE || '604800000', 10);
 
 // View engine setup
@@ -96,14 +99,17 @@ app.use(errorHandler);
 // Only start server if this file is run directly (not imported for testing)
 if (require.main === module) {
     const { initializeDatabase } = require('./lib/db');
-    initializeDatabase().then(() => {
-        app.listen(PORT, () => {
-            console.log(`Server running on http://localhost:${PORT}`);
+    const { enableWAL } = require('./lib/db-wrapper');
+    initializeDatabase()
+        .then(() => enableWAL())
+        .then(() => {
+            app.listen(PORT, () => {
+                console.log(`Server running on http://localhost:${PORT}`);
+            });
+        }).catch(err => {
+            console.error('Failed to initialize database:', err);
+            process.exit(1);
         });
-    }).catch(err => {
-        console.error('Failed to initialize database:', err);
-        process.exit(1);
-    });
 }
 
 module.exports = app;
