@@ -2,13 +2,6 @@ const request = require('supertest');
 const { hashPassword } = require('../lib/auth');
 const { ROLES } = require('../lib/roles');
 
-/**
- * Helper to authenticate a user and return an agent with session cookies
- * @param {Express.Application} app - Express app instance
- * @param {string} username - Username to login as
- * @param {string} password - Password for the user
- * @returns {Promise<request.SuperAgentTest>} Authenticated agent
- */
 async function authenticateAs(app, username, password) {
     const agent = request.agent(app);
 
@@ -21,11 +14,6 @@ async function authenticateAs(app, username, password) {
     return agent;
 }
 
-/**
- * Create test transaction data with defaults
- * @param {Object} overrides - Fields to override
- * @returns {Object} Transaction data
- */
 function createTransactionData(overrides = {}) {
     return {
         type: 'expense',
@@ -37,11 +25,6 @@ function createTransactionData(overrides = {}) {
     };
 }
 
-/**
- * Create test band data with defaults
- * @param {Object} overrides - Fields to override
- * @returns {Object} Band data
- */
 function createBandData(overrides = {}) {
     return {
         name: `Test Band ${Date.now()}`,
@@ -50,14 +33,6 @@ function createBandData(overrides = {}) {
     };
 }
 
-/**
- * Helper to create a user directly in the database
- * @param {Object} db - Database connection
- * @param {string} username - Username
- * @param {string} password - Plain text password
- * @param {number} role - Role bitmask
- * @returns {Promise<number>} User ID
- */
 async function createTestUser(db, username, password, role = ROLES.BAND) {
     const hashedPassword = await hashPassword(password);
 
@@ -73,14 +48,6 @@ async function createTestUser(db, username, password, role = ROLES.BAND) {
     });
 }
 
-/**
- * Helper to create a band directly in the database
- * @param {Object} db - Database connection
- * @param {number} userId - User ID for the band
- * @param {string} name - Band name
- * @param {string} email - Band email
- * @returns {Promise<number>} Band ID
- */
 async function createTestBand(db, userId, name, email) {
     return new Promise((resolve, reject) => {
         db.run(
@@ -94,13 +61,6 @@ async function createTestBand(db, userId, name, email) {
     });
 }
 
-/**
- * Helper to create a transaction directly in the database
- * @param {Object} db - Database connection
- * @param {number} bandId - Band ID
- * @param {Object} data - Transaction data
- * @returns {Promise<number>} Transaction ID
- */
 async function createTestTransaction(db, bandId, data = {}) {
     const txData = createTransactionData(data);
 
@@ -127,13 +87,6 @@ async function createTestTransaction(db, bandId, data = {}) {
     });
 }
 
-/**
- * Helper to create a category directly in the database
- * @param {Object} db - Database connection
- * @param {string} name - Category name
- * @param {string} type - Category type (income/expense/both)
- * @returns {Promise<number>} Category ID
- */
 async function createTestCategory(db, name, type = 'expense') {
     return new Promise((resolve, reject) => {
         db.run(
@@ -147,12 +100,6 @@ async function createTestCategory(db, name, type = 'expense') {
     });
 }
 
-/**
- * Get a user by username
- * @param {Object} db - Database connection
- * @param {string} username - Username
- * @returns {Promise<Object>} User object
- */
 async function getTestUser(db, username) {
     return new Promise((resolve, reject) => {
         db.get(
@@ -166,12 +113,6 @@ async function getTestUser(db, username) {
     });
 }
 
-/**
- * Get a transaction by ID
- * @param {Object} db - Database connection
- * @param {number} id - Transaction ID
- * @returns {Promise<Object>} Transaction object
- */
 async function getTestTransaction(db, id) {
     return new Promise((resolve, reject) => {
         db.get(
@@ -185,11 +126,6 @@ async function getTestTransaction(db, id) {
     });
 }
 
-/**
- * Create test invoice data with defaults (for HTTP form submission)
- * @param {Object} overrides - Fields to override
- * @returns {Object} Invoice form data
- */
 function createInvoiceData(overrides = {}) {
     return {
         issue_date: '2025-01-15',
@@ -208,13 +144,6 @@ function createInvoiceData(overrides = {}) {
 // Counter for unique invoice numbers
 let invoiceCounter = 0;
 
-/**
- * Helper to create an invoice directly in the database
- * @param {Object} db - Database connection
- * @param {number} bandId - Band ID
- * @param {Object} data - Invoice data overrides
- * @returns {Promise<number>} Invoice ID
- */
 async function createTestInvoice(db, bandId, data = {}) {
     invoiceCounter++;
     const invoiceNumber = data.invoice_number || `FAC-2025-${String(invoiceCounter).padStart(4, '0')}-${Date.now()}`;
@@ -257,13 +186,6 @@ async function createTestInvoice(db, bandId, data = {}) {
     });
 }
 
-/**
- * Helper to add an item to an invoice
- * @param {Object} db - Database connection
- * @param {number} invoiceId - Invoice ID
- * @param {Object} item - Item data
- * @returns {Promise<number>} Item ID
- */
 async function createTestInvoiceItem(db, invoiceId, item = {}) {
     const defaults = {
         description: 'Test Service',
@@ -295,12 +217,6 @@ async function createTestInvoiceItem(db, invoiceId, item = {}) {
     });
 }
 
-/**
- * Get an invoice by ID
- * @param {Object} db - Database connection
- * @param {number} id - Invoice ID
- * @returns {Promise<Object>} Invoice object
- */
 async function getTestInvoice(db, id) {
     return new Promise((resolve, reject) => {
         db.get(
@@ -314,12 +230,6 @@ async function getTestInvoice(db, id) {
     });
 }
 
-/**
- * Get invoice items by invoice ID
- * @param {Object} db - Database connection
- * @param {number} invoiceId - Invoice ID
- * @returns {Promise<Array>} Array of invoice items
- */
 async function getTestInvoiceItems(db, invoiceId) {
     return new Promise((resolve, reject) => {
         db.all(
@@ -333,11 +243,6 @@ async function getTestInvoiceItems(db, invoiceId) {
     });
 }
 
-/**
- * Create test Qonto transaction data with defaults
- * @param {Object} overrides - Fields to override
- * @returns {Object} Qonto transaction data
- */
 function createQontoTransactionData(overrides = {}) {
     return {
         id: `qonto-${Date.now()}`,
@@ -355,14 +260,6 @@ function createQontoTransactionData(overrides = {}) {
     };
 }
 
-/**
- * Create a Qonto transaction link directly in the database
- * @param {Object} db - Database connection
- * @param {number} transactionId - TAH transaction ID
- * @param {Object} qontoData - Qonto transaction data
- * @param {number} userId - User ID who created the link
- * @returns {Promise<number>} Link ID
- */
 async function createTestQontoLink(db, transactionId, qontoData = {}, userId = 1) {
     const qonto = createQontoTransactionData(qontoData);
 
@@ -395,12 +292,6 @@ async function createTestQontoLink(db, transactionId, qontoData = {}, userId = 1
     });
 }
 
-/**
- * Get all Qonto links for a transaction
- * @param {Object} db - Database connection
- * @param {number} transactionId - TAH transaction ID
- * @returns {Promise<Array>} Array of link objects
- */
 async function getTestQontoLinks(db, transactionId) {
     return new Promise((resolve, reject) => {
         db.all(
