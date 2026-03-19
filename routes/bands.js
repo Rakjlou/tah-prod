@@ -23,7 +23,8 @@ const { getOAuthClient, getAuthUrl, getTokensFromCode } = require('../lib/google
 const googleAuth = require('../lib/google-auth');
 const { sendBandWelcomeEmail, sendPasswordResetEmail } = require('../lib/email');
 const configService = require('../lib/config-service');
-const { generateRandomPassword, destroyUserSessions } = require('../lib/helpers');
+const { generateRandomPassword } = require('../lib/auth');
+const { destroyUserSessions } = require('../lib/sessions');
 
 /**
  * GET /auth/google

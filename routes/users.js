@@ -11,7 +11,7 @@ const {
 } = require('../lib/db');
 const { hashPassword } = require('../lib/auth');
 const { ROLES } = require('../lib/roles');
-const { destroyUserSessions } = require('../lib/helpers');
+const { destroyUserSessions } = require('../lib/sessions');
 
 /**
  * GET /admin/users

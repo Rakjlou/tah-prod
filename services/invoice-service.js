@@ -23,18 +23,7 @@ const BAND_STATUS_TRANSITIONS = {
     cancelled: []
 };
 
-/**
- * Invoice Service
- * Handles all invoice-related business logic
- */
 class InvoiceService {
-    /**
-     * Validate status transition for band users
-     * @param {string} currentStatus - Current invoice status
-     * @param {string} newStatus - New status to transition to
-     * @param {boolean} isAdmin - Whether user is admin (admins bypass validation)
-     * @throws {ValidationError} If transition is not allowed
-     */
     validateStatusTransition(currentStatus, newStatus, isAdmin = false) {
         // Admins can set any status
         if (isAdmin) return;
@@ -50,32 +39,14 @@ class InvoiceService {
             );
         }
     }
-    /**
-     * Get invoices for a band with filters
-     * @param {number} bandId - Band ID
-     * @param {string|null} statusFilter - Status filter (draft, sent, paid, cancelled)
-     * @returns {Promise<Array>} List of invoices
-     */
     async getInvoicesForBand(bandId, statusFilter = null) {
         return await getInvoicesByBand(bandId, statusFilter);
     }
 
-    /**
-     * Get all invoices with bands (admin view)
-     * @param {number|null} bandFilter - Band ID filter
-     * @param {string|null} statusFilter - Status filter
-     * @returns {Promise<Array>} List of invoices with band info
-     */
     async getAllInvoices(bandFilter = null, statusFilter = null) {
         return await getAllInvoicesWithBands(bandFilter, statusFilter);
     }
 
-    /**
-     * Get invoice by ID with items
-     * @param {number} invoiceId - Invoice ID
-     * @returns {Promise<Object>} Invoice object with items
-     * @throws {NotFoundError} If invoice not found
-     */
     async getById(invoiceId) {
         const invoice = await getInvoiceById(invoiceId);
         if (!invoice) {
@@ -85,10 +56,6 @@ class InvoiceService {
         return { ...invoice, items };
     }
 
-    /**
-     * Get invoice configuration
-     * @returns {Promise<Object>} Invoice configuration object
-     */
     async getInvoiceConfig() {
         const allConfig = await getAllConfig();
         return {
@@ -106,19 +73,6 @@ class InvoiceService {
         };
     }
 
-    /**
-     * Create a new invoice with items
-     * @param {Object} data - Invoice data
-     * @param {number} data.bandId - Band ID
-     * @param {string} data.issueDate - Issue date
-     * @param {string} data.serviceDate - Service date (optional)
-     * @param {string} data.clientName - Client name
-     * @param {string} data.clientAddress - Client address
-     * @param {string} data.clientSiret - Client SIRET (optional)
-     * @param {string} data.notes - Notes (optional)
-     * @param {Array} data.items - Invoice line items
-     * @returns {Promise<number>} Created invoice ID
-     */
     async create(data) {
         const { bandId, issueDate, serviceDate, clientName, clientAddress, clientSiret, notes, items, paymentDelayText, latePenaltyText, recoveryFeeText } = data;
 
@@ -195,14 +149,6 @@ class InvoiceService {
         return invoiceId;
     }
 
-    /**
-     * Update an invoice
-     * @param {number} invoiceId - Invoice ID
-     * @param {number} bandId - Band ID (for ownership verification, null for admin)
-     * @param {Object} data - Update data
-     * @param {boolean} isAdmin - Whether user is admin
-     * @returns {Promise<void>}
-     */
     async update(invoiceId, bandId, data, isAdmin = false) {
         const invoice = await getInvoiceById(invoiceId);
         if (!invoice) {
@@ -268,13 +214,6 @@ class InvoiceService {
         }
     }
 
-    /**
-     * Update invoice status
-     * @param {number} invoiceId - Invoice ID
-     * @param {string} status - New status
-     * @param {boolean} isAdmin - Whether user is admin
-     * @returns {Promise<void>}
-     */
     async updateStatus(invoiceId, status, isAdmin = false) {
         const validStatuses = ['draft', 'sent', 'paid', 'cancelled'];
         if (!validStatuses.includes(status)) {
@@ -292,13 +231,6 @@ class InvoiceService {
         await updateInvoice(invoiceId, { status });
     }
 
-    /**
-     * Delete an invoice
-     * @param {number} invoiceId - Invoice ID
-     * @param {number} bandId - Band ID (for ownership verification, null for admin)
-     * @param {boolean} isAdmin - Whether user is admin
-     * @returns {Promise<void>}
-     */
     async delete(invoiceId, bandId, isAdmin = false) {
         const invoice = await getInvoiceById(invoiceId);
         if (!invoice) {
@@ -318,11 +250,6 @@ class InvoiceService {
         await deleteInvoice(invoiceId);
     }
 
-    /**
-     * Prepare invoice data for PDF generation
-     * @param {number} invoiceId - Invoice ID
-     * @returns {Promise<Object>} Object with invoiceData and invoiceConfig
-     */
     async prepareInvoiceForPdf(invoiceId) {
         const invoice = await this.getById(invoiceId);
         const config = await this.getInvoiceConfig();
@@ -347,13 +274,6 @@ class InvoiceService {
         };
     }
 
-    /**
-     * Create a transaction from an invoice
-     * @param {number} invoiceId - Invoice ID
-     * @param {number} bandId - Band ID
-     * @param {number} categoryId - Transaction category ID
-     * @returns {Promise<number>} Created transaction ID
-     */
     async createTransaction(invoiceId, bandId, categoryId) {
         const invoice = await this.getById(invoiceId);
 

@@ -20,9 +20,6 @@ const {
 } = require('../lib/google-drive');
 const qontoDb = require('../lib/qonto-db');
 
-/**
- * Shared handler for transaction detail view (both bands and admins)
- */
 async function handleTransactionDetail(req, res) {
     try {
         const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
@@ -77,9 +74,6 @@ async function handleTransactionDetail(req, res) {
     }
 }
 
-/**
- * Shared handler for transaction edit (both bands and admins)
- */
 async function handleTransactionEdit(req, res) {
     try {
         const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
@@ -131,9 +125,11 @@ async function handleTransactionEdit(req, res) {
             req.flash.error('Associated band not found');
             return res.redirect(isAdmin ? '/admin/transactions' : '/transactions');
         }
-        const transactions = await getTransactionsByBand(transaction.band_id);
-        const authenticatedClient = await googleAuth.getAuthenticatedClient();
-        await syncTransactionsToSheet(authenticatedClient, band.accounting_spreadsheet_id, transactions);
+        if (band.accounting_spreadsheet_id) {
+            const transactions = await getTransactionsByBand(transaction.band_id);
+            const authenticatedClient = await googleAuth.getAuthenticatedClient();
+            await syncTransactionsToSheet(authenticatedClient, band.accounting_spreadsheet_id, transactions);
+        }
 
         req.flash.success('Transaction updated successfully');
         res.redirect((isAdmin ? '/admin/transactions/' : '/transactions/') + req.params.id);
@@ -145,9 +141,6 @@ async function handleTransactionEdit(req, res) {
     }
 }
 
-/**
- * Shared handler for create folder (both bands and admins)
- */
 async function handleCreateFolder(req, res) {
     try {
         const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
@@ -200,9 +193,6 @@ async function handleCreateFolder(req, res) {
     }
 }
 
-/**
- * Shared handler for upload documents (both bands and admins)
- */
 async function handleUploadDocuments(req, res) {
     try {
         const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
@@ -258,9 +248,6 @@ async function handleUploadDocuments(req, res) {
     }
 }
 
-/**
- * Shared handler for delete document (both bands and admins)
- */
 async function handleDeleteDocument(req, res) {
     try {
         const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);

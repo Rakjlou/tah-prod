@@ -14,14 +14,14 @@ class SyncService {
      * @param {string} spreadsheetId - Google Sheets spreadsheet ID
      */
     async syncBandTransactions(bandId, spreadsheetId) {
+        if (!spreadsheetId) return;
+
         try {
             const transactions = await getTransactionsByBand(bandId);
             const authenticatedClient = await googleAuth.getAuthenticatedClient();
             await syncTransactionsToSheet(authenticatedClient, spreadsheetId, transactions);
         } catch (error) {
-            // Log error but don't throw - sync failures shouldn't block the main operation
             console.error('Error syncing to Google Sheets:', error);
-            // Silently fail - the main operation (create/update/delete) should succeed
         }
     }
 }

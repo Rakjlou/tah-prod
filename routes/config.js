@@ -16,7 +16,7 @@ const { ROLES } = require('../lib/roles');
 const { createBandStructure } = require('../lib/google-drive');
 const googleAuth = require('../lib/google-auth');
 const configService = require('../lib/config-service');
-const { generateRandomPassword } = require('../lib/helpers');
+const { generateRandomPassword } = require('../lib/auth');
 
 /**
  * GET /config

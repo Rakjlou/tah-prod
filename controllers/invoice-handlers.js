@@ -15,11 +15,6 @@ const { getTransactionsFolderId, createTransactionFolder, uploadTransactionDocum
 const { syncTransactionsToSheet } = require('../lib/google-sheets');
 const { generateInvoicePDF } = require('../lib/invoice-pdf');
 
-/**
- * Parse invoice items from form body
- * @param {Object} body - Request body
- * @returns {Array} Parsed items array
- */
 function parseInvoiceItems(body) {
     const items = [];
     const descriptions = Array.isArray(body.item_description) ? body.item_description : [body.item_description];
@@ -38,9 +33,6 @@ function parseInvoiceItems(body) {
     return items;
 }
 
-/**
- * Shared handler for invoice list view (both bands and admins)
- */
 async function handleInvoiceList(req, res) {
     try {
         const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
@@ -81,9 +73,6 @@ async function handleInvoiceList(req, res) {
     }
 }
 
-/**
- * Shared handler for invoice detail view (both bands and admins)
- */
 async function handleInvoiceDetail(req, res) {
     try {
         const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
@@ -119,9 +108,6 @@ async function handleInvoiceDetail(req, res) {
     }
 }
 
-/**
- * Shared handler for new invoice form (both bands and admins)
- */
 async function handleInvoiceNew(req, res) {
     try {
         const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
@@ -158,9 +144,6 @@ async function handleInvoiceNew(req, res) {
     }
 }
 
-/**
- * Shared handler for create invoice (both bands and admins)
- */
 async function handleInvoiceCreate(req, res) {
     try {
         const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
@@ -207,9 +190,6 @@ async function handleInvoiceCreate(req, res) {
     }
 }
 
-/**
- * Shared handler for edit invoice form (both bands and admins)
- */
 async function handleInvoiceEditForm(req, res) {
     try {
         const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
@@ -249,9 +229,6 @@ async function handleInvoiceEditForm(req, res) {
     }
 }
 
-/**
- * Shared handler for update invoice (both bands and admins)
- */
 async function handleInvoiceEdit(req, res) {
     try {
         const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
@@ -293,9 +270,6 @@ async function handleInvoiceEdit(req, res) {
     }
 }
 
-/**
- * Shared handler for delete invoice (both bands and admins)
- */
 async function handleInvoiceDelete(req, res) {
     try {
         const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
@@ -322,9 +296,6 @@ async function handleInvoiceDelete(req, res) {
     }
 }
 
-/**
- * Shared handler for update invoice status (both bands and admins)
- */
 async function handleInvoiceStatusUpdate(req, res) {
     try {
         const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
@@ -353,9 +324,6 @@ async function handleInvoiceStatusUpdate(req, res) {
     }
 }
 
-/**
- * Handler for creating transaction from invoice
- */
 async function handleCreateTransaction(req, res) {
     try {
         const isAdmin = hasRole(req.session.user.role, ROLES.ADMIN);
@@ -381,33 +349,33 @@ async function handleCreateTransaction(req, res) {
 
         const transactionId = await invoiceService.createTransaction(req.params.id, bandId, categoryId);
 
-        // Auto-upload invoice PDF to transaction's document folder
-        try {
-            const band = await getBandById(bandId);
-            const authenticatedClient = await googleAuth.getAuthenticatedClient();
+        // Auto-upload invoice PDF to transaction's document folder (only if Google Drive is set up for this band)
+        const band = await getBandById(bandId);
+        if (band && band.folder_id) {
+            try {
+                const authenticatedClient = await googleAuth.getAuthenticatedClient();
 
-            // Get or create transaction folder
-            const transaction = await getTransactionById(transactionId);
-            let folderId = transaction.drive_folder_id;
-            if (!folderId) {
-                const transactionsFolderId = await getTransactionsFolderId(authenticatedClient, band.folder_id);
-                folderId = await createTransactionFolder(authenticatedClient, transactionsFolderId, transactionId, transaction.description);
-                await updateTransaction(transactionId, { drive_folder_id: folderId });
+                const transaction = await getTransactionById(transactionId);
+                let folderId = transaction.drive_folder_id;
+                if (!folderId) {
+                    const transactionsFolderId = await getTransactionsFolderId(authenticatedClient, band.folder_id);
+                    folderId = await createTransactionFolder(authenticatedClient, transactionsFolderId, transactionId, transaction.description);
+                    await updateTransaction(transactionId, { drive_folder_id: folderId });
+                }
+
+                const { invoiceData, invoiceConfig } = await invoiceService.prepareInvoiceForPdf(req.params.id);
+                const pdfBuffer = generateInvoicePDF(invoiceData, invoiceConfig);
+                const filename = `Facture_${invoice.invoice_number.replace(/[^a-zA-Z0-9-]/g, '_')}.pdf`;
+                const driveFileId = await uploadTransactionDocument(authenticatedClient, folderId, pdfBuffer, filename);
+                await addTransactionDocument(transactionId, driveFileId, filename);
+
+                if (band.accounting_spreadsheet_id) {
+                    const transactions = await getTransactionsByBand(bandId);
+                    await syncTransactionsToSheet(authenticatedClient, band.accounting_spreadsheet_id, transactions);
+                }
+            } catch (pdfError) {
+                console.error('Error uploading invoice PDF:', pdfError);
             }
-
-            // Generate and upload invoice PDF
-            const { invoiceData, invoiceConfig } = await invoiceService.prepareInvoiceForPdf(req.params.id);
-            const pdfBuffer = generateInvoicePDF(invoiceData, invoiceConfig);
-            const filename = `Facture_${invoice.invoice_number.replace(/[^a-zA-Z0-9-]/g, '_')}.pdf`;
-            const driveFileId = await uploadTransactionDocument(authenticatedClient, folderId, pdfBuffer, filename);
-            await addTransactionDocument(transactionId, driveFileId, filename);
-
-            // Sync to sheet
-            const transactions = await getTransactionsByBand(bandId);
-            await syncTransactionsToSheet(authenticatedClient, band.accounting_spreadsheet_id, transactions);
-        } catch (pdfError) {
-            // Log error but don't fail the transaction creation
-            console.error('Error uploading invoice PDF:', pdfError);
         }
 
         req.flash.success('Transaction created from invoice');

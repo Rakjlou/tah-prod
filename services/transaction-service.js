@@ -12,17 +12,7 @@ const { NotFoundError, ValidationError, ConflictError } = require('../lib/errors
 const documentService = require('./document-service');
 const syncService = require('./sync-service');
 
-/**
- * Transaction Service
- * Handles all transaction-related business logic
- */
 class TransactionService {
-    /**
-     * Get transactions for a band with filters
-     * @param {number} bandId - Band ID
-     * @param {string|null} statusFilter - Status filter (pending, validated, null)
-     * @returns {Promise<Object>} Transactions data including balance and pending count
-     */
     async getTransactionsForBand(bandId, statusFilter = null) {
         const transactions = await getTransactionsByBand(bandId, statusFilter);
         const balance = await getBalanceForBand(bandId);
@@ -35,22 +25,10 @@ class TransactionService {
         };
     }
 
-    /**
-     * Get all transactions with bands (admin view)
-     * @param {number|null} bandFilter - Band ID filter
-     * @param {string|null} statusFilter - Status filter
-     * @returns {Promise<Array>} List of transactions with band info
-     */
     async getAllTransactions(bandFilter = null, statusFilter = 'pending') {
         return await getAllTransactionsWithBands(bandFilter, statusFilter);
     }
 
-    /**
-     * Get transaction by ID
-     * @param {number} transactionId - Transaction ID
-     * @returns {Promise<Object>} Transaction object
-     * @throws {NotFoundError} If transaction not found
-     */
     async getById(transactionId) {
         const transaction = await getTransactionById(transactionId);
         if (!transaction) {
@@ -59,20 +37,6 @@ class TransactionService {
         return transaction;
     }
 
-    /**
-     * Create a new transaction
-     * @param {Object} data - Transaction data
-     * @param {number} data.bandId - Band ID
-     * @param {string} data.type - Transaction type (recette/depense)
-     * @param {number} data.amount - Transaction amount
-     * @param {number} data.categoryId - Category ID
-     * @param {string} data.description - Transaction description
-     * @param {string} data.bandFolderId - Band's folder ID in Google Drive
-     * @param {string} data.spreadsheetId - Band's spreadsheet ID
-     * @param {Array} data.files - Uploaded files (optional)
-     * @param {string} data.transactionDate - Transaction date (optional)
-     * @returns {Promise<number>} Created transaction ID
-     */
     async create(data) {
         const { bandId, type, amount, categoryId, description, bandFolderId, spreadsheetId, files, transactionDate } = data;
 
@@ -105,18 +69,10 @@ class TransactionService {
         return transactionId;
     }
 
-    /**
-     * Update a transaction
-     * @param {number} transactionId - Transaction ID
-     * @param {number} bandId - Band ID (for ownership verification)
-     * @param {Object} data - Update data
-     * @param {string} data.spreadsheetId - Band's spreadsheet ID
-     * @returns {Promise<void>}
-     */
     async update(transactionId, bandId, data) {
         const transaction = await this.getById(transactionId);
 
-        // Verify ownership
+        // 404 instead of 403 to avoid leaking resource existence
         if (transaction.band_id !== bandId) {
             throw new NotFoundError('Transaction');
         }
@@ -152,14 +108,6 @@ class TransactionService {
         }
     }
 
-    /**
-     * Delete a transaction
-     * @param {number} transactionId - Transaction ID
-     * @param {number} bandId - Band ID (for ownership verification)
-     * @param {string} spreadsheetId - Band's spreadsheet ID
-     * @param {boolean} isAdmin - Whether the user is an admin (admins can delete validated transactions)
-     * @returns {Promise<void>}
-     */
     async delete(transactionId, bandId, spreadsheetId, isAdmin = false) {
         const transaction = await this.getById(transactionId);
 
@@ -185,13 +133,6 @@ class TransactionService {
         await syncService.syncBandTransactions(bandId, spreadsheetId);
     }
 
-    /**
-     * Validate a transaction (admin only)
-     * @param {number} transactionId - Transaction ID
-     * @param {number} validatorId - User ID of validator
-     * @param {string} transactionDate - Transaction date
-     * @returns {Promise<void>}
-     */
     async validate(transactionId, validatorId, transactionDate) {
         const transaction = await this.getById(transactionId);
 
