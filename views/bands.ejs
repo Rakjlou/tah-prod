@@ -55,6 +55,7 @@
                                 <th>Email</th>
                                 <th>Folder</th>
                                 <th>Created</th>
+                                <th class="numeric">Balance</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -71,20 +72,37 @@
                                         <% } %>
                                     </td>
                                     <td><%= new Date(band.created_at).toLocaleDateString() %></td>
+                                    <td class="numeric <%= band.balance < 0 ? 'stat-warning' : '' %>">
+                                        <%= band.balance.toFixed(2) %> &euro;
+                                    </td>
                                     <td>
-                                        <div class="flex gap-sm flex-wrap">
-                                            <form action="/admin/bands/<%= band.id %>/reset-password" method="POST">
-                                                <button type="submit" class="btn btn-sm">Reset Password</button>
+                                        <div class="flex gap-sm">
+                                            <form action="/admin/bands/<%= band.id %>/reset-password" method="POST" style="display:inline;">
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-icon"
+                                                        title="Reset password"
+                                                        aria-label="Reset password for <%= band.name %>">&#x21BB;</button>
                                             </form>
-                                            <button type="button" class="btn btn-sm" onclick="toggleCredentials(<%= band.id %>)">Manage Credentials</button>
-                                            <form action="/admin/bands/<%= band.id %>/delete" method="POST">
-                                                <button type="submit" class="btn btn-sm btn-error" onclick="return confirm('Are you sure you want to delete <%= band.name %>? This will delete the band, user account, all transactions, and Google Drive folder. This action cannot be undone.')">Delete</button>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-icon"
+                                                    id="credentials-toggle-<%= band.id %>"
+                                                    title="Manage credentials"
+                                                    aria-label="Manage credentials for <%= band.name %>"
+                                                    aria-expanded="false"
+                                                    aria-controls="credentials-<%= band.id %>"
+                                                    onclick="toggleCredentials(<%= band.id %>)">&#x25B8;</button>
+                                            <form action="/admin/bands/<%= band.id %>/delete" method="POST" style="display:inline;">
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-icon btn-error"
+                                                        title="Delete band"
+                                                        aria-label="Delete band <%= band.name %>"
+                                                        onclick="return confirm('Are you sure you want to delete <%= band.name %>? This will delete the band, user account, all transactions, and Google Drive folder. This action cannot be undone.')">&#x2717;</button>
                                             </form>
                                         </div>
                                     </td>
                                 </tr>
                                 <tr id="credentials-<%= band.id %>" style="display: none;">
-                                    <td colspan="5">
+                                    <td colspan="6">
                                         <div class="card" style="margin: 0;">
                                             <h3 class="mb-base">Credentials for <%= band.name %></h3>
 
@@ -101,9 +119,12 @@
                                                         <td>Main</td>
                                                         <td><%= band.email %></td>
                                                         <td>
-                                                            <form action="/admin/bands/<%= band.id %>/reset-password" method="POST" class="flex gap-sm flex-wrap" style="align-items: center;">
+                                                            <form action="/admin/bands/<%= band.id %>/reset-password" method="POST" class="flex gap-sm" style="align-items: center;">
                                                                 <input type="password" name="password" class="form-input form-input-sm" placeholder="Leave empty for random" style="width: 200px;">
-                                                                <button type="submit" class="btn btn-sm">Reset Password</button>
+                                                                <button type="submit"
+                                                                        class="btn btn-sm btn-icon"
+                                                                        title="Reset password"
+                                                                        aria-label="Reset main password for <%= band.name %>">&#x21BB;</button>
                                                             </form>
                                                         </td>
                                                     </tr>
@@ -113,13 +134,20 @@
                                                             <td><%= cred.label %></td>
                                                             <td><%= cred.username %></td>
                                                             <td>
-                                                                <div class="flex gap-sm flex-wrap">
+                                                                <div class="flex gap-sm">
                                                                     <form action="/admin/bands/<%= band.id %>/credentials/<%= cred.id %>/reset-password" method="POST" class="flex gap-sm" style="align-items: center;">
                                                                         <input type="password" name="password" class="form-input form-input-sm" placeholder="Leave empty for random" style="width: 200px;">
-                                                                        <button type="submit" class="btn btn-sm">Reset Password</button>
+                                                                        <button type="submit"
+                                                                                class="btn btn-sm btn-icon"
+                                                                                title="Reset password"
+                                                                                aria-label="Reset password for credential <%= cred.label %>">&#x21BB;</button>
                                                                     </form>
                                                                     <form action="/admin/bands/<%= band.id %>/credentials/<%= cred.id %>/delete" method="POST" style="display:inline;">
-                                                                        <button type="submit" class="btn btn-sm btn-error" onclick="return confirm('Delete credential \'<%= cred.label %>\'?')">Delete</button>
+                                                                        <button type="submit"
+                                                                                class="btn btn-sm btn-icon btn-error"
+                                                                                title="Delete credential"
+                                                                                aria-label="Delete credential <%= cred.label %>"
+                                                                                onclick="return confirm('Delete credential \'<%= cred.label %>\'?')">&#x2717;</button>
                                                                     </form>
                                                                 </div>
                                                             </td>

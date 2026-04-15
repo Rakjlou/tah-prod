@@ -14,7 +14,8 @@ const {
     getCredentialByUsername,
     getCredentialById,
     updateCredentialPassword,
-    deleteBandCredential
+    deleteBandCredential,
+    getBalancesForAllBands
 } = require('../lib/db');
 const { hashPassword } = require('../lib/auth');
 const { ROLES } = require('../lib/roles');
@@ -90,8 +91,12 @@ router.get('/auth/google/callback', requireAdmin, async (req, res) => {
  * Display bands list
  */
 router.get('/bands', requireAdmin, async (req, res) => {
-    const bands = await getAllBands();
-    const allCredentials = await getAllBandCredentials();
+    const [bands, allCredentials, balanceRows] = await Promise.all([
+        getAllBands(),
+        getAllBandCredentials(),
+        getBalancesForAllBands()
+    ]);
+
     const credentialsByBandId = {};
     for (const cred of allCredentials) {
         if (!credentialsByBandId[cred.band_id]) {
@@ -99,7 +104,18 @@ router.get('/bands', requireAdmin, async (req, res) => {
         }
         credentialsByBandId[cred.band_id].push(cred);
     }
-    res.render('bands', { bands, credentialsByBandId });
+
+    const balanceByBandId = {};
+    for (const row of balanceRows) {
+        balanceByBandId[row.band_id] = row.balance;
+    }
+
+    const bandsWithBalance = bands.map(b => ({
+        ...b,
+        balance: balanceByBandId[b.id] || 0
+    }));
+
+    res.render('bands', { bands: bandsWithBalance, credentialsByBandId });
 });
 
 /**
