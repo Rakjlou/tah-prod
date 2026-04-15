@@ -13,7 +13,12 @@
 
             <div class="card mb-lg">
                 <p class="mb-sm"><strong>Total cached transactions:</strong> <%= qontoTransactions.length %></p>
-                <p class="small muted">This panel shows all Qonto transactions stored in the local cache.</p>
+                <p class="mb-sm"><strong>Last sync:</strong>
+                    <%= stats.lastSyncDate ? new Date(stats.lastSyncDate).toLocaleString() : 'Never' %>
+                </p>
+                <button type="button" id="force-fetch-btn" class="btn btn-secondary" onclick="forceFetchQonto()">Force Fetch from Qonto</button>
+                <div id="qonto-fetch-result" class="mt-sm"></div>
+                <p class="small muted mt-sm">This panel shows all Qonto transactions stored in the local cache.</p>
             </div>
 
             <% if (qontoTransactions.length === 0) { %>
@@ -78,5 +83,6 @@
     </main>
 
     <%- include('partials/footer') %>
+    <script src="/js/admin-qonto.js"></script>
 </body>
 </html>

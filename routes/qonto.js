@@ -16,10 +16,17 @@ const configService = require('../lib/config-service');
 router.get('/admin/qonto', requireAdmin, async (req, res) => {
     try {
         const qontoTransactions = await qontoDb.getAllQontoTransactionsWithLinks();
+        const stats = {
+            totalCached: qontoTransactions.length,
+            lastSyncDate: qontoTransactions.length > 0 ? qontoTransactions[0].settled_at : null,
+            newestTransaction: qontoTransactions.length > 0 ? qontoTransactions[0].settled_at : null,
+            oldestTransaction: qontoTransactions.length > 0 ? qontoTransactions[qontoTransactions.length - 1].settled_at : null
+        };
 
         res.render('admin-qonto', {
             user: req.session.user,
             qontoTransactions,
+            stats,
             error: req.session.error,
             success: req.session.success
         });
@@ -31,6 +38,27 @@ router.get('/admin/qonto', requireAdmin, async (req, res) => {
         console.error('Error loading Qonto admin panel:', error);
         req.session.error = 'Failed to load Qonto transactions';
         res.redirect('/admin/transactions');
+    }
+});
+
+/**
+ * POST /admin/qonto/sync
+ * Trigger an incremental sync of Qonto transactions
+ */
+router.post('/admin/qonto/sync', requireAdmin, async (req, res) => {
+    try {
+        const syncResult = await qontoCache.syncTransactions();
+        res.json({
+            success: true,
+            synced: syncResult.synced,
+            total: syncResult.total
+        });
+    } catch (error) {
+        console.error('Error syncing Qonto transactions:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to sync Qonto transactions'
+        });
     }
 });
 
